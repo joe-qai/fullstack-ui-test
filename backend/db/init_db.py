@@ -30,6 +30,7 @@ BUILTIN_KEYWORDS = [
     {"name": "scroll_to", "category": "platform", "platform": "android", "params": json.dumps({"type": "object", "properties": {"text": {"type": "string"}}, "required": ["text"]}), "description": "Scroll to specified text"},
     {"name": "launch_app", "category": "platform", "platform": "android", "params": json.dumps({"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]}), "description": "Launch specified app"},
     {"name": "stop_app", "category": "platform", "platform": "android", "params": json.dumps({"type": "object", "properties": {"package": {"type": "string"}}, "required": ["package"]}), "description": "Stop specified app"},
+    {"name": "install_apk", "category": "platform", "platform": "android", "params": json.dumps({"type": "object", "properties": {"apk_id": {"type": "string"}}, "required": ["apk_id"]}), "description": "安装指定APK到设备"},
 ]
 
 def init_db():

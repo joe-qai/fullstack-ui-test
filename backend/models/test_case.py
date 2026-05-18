@@ -16,6 +16,7 @@ class TestCase(Base):
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)
     description = Column(String)
+    depends_on = Column(String, ForeignKey("test_cases.id"), nullable=True)
     script_id = Column(String, ForeignKey("scripts.id"), nullable=True)
     created_at = Column(DateTime, default=utc_now)
     steps = relationship("CaseStep", back_populates="test_case", cascade="all, delete-orphan", order_by="CaseStep.step_order")

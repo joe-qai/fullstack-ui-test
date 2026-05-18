@@ -33,6 +33,7 @@ class TestCaseBase(BaseModel):
     name: str
     type: str = "keyword"
     description: str | None = None
+    depends_on: str | None = None
     script_id: str | None = None
 
 class TestCaseCreate(TestCaseBase):

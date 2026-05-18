@@ -16,6 +16,7 @@ class TaskResultResponse(TaskResultBase):
 
 class TestTaskBase(BaseModel):
     case_id: str
+    apk_id: str | None = None
     device_ids: list[str]
     status: str = "pending"
 

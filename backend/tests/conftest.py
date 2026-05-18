@@ -26,6 +26,9 @@ app.dependency_overrides[get_db] = override_get_db
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
     Base.metadata.create_all(bind=engine)
+    # Seed keywords
+    from db.init_db import init_db
+    init_db()
     yield
     Base.metadata.drop_all(bind=engine)
 

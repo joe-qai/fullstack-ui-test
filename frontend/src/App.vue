@@ -18,6 +18,22 @@
           <ProjectOutlined />
           <span>Projects</span>
         </a-menu-item>
+        <a-menu-item key="po">
+          <AppstoreOutlined />
+          <span>PO管理</span>
+        </a-menu-item>
+        <a-menu-item key="apk">
+          <AndroidOutlined />
+          <span>APK管理</span>
+        </a-menu-item>
+        <a-menu-item key="cases">
+          <FileTextOutlined />
+          <span>测试用例</span>
+        </a-menu-item>
+        <a-menu-item key="scripts">
+          <CodeOutlined />
+          <span>脚本管理</span>
+        </a-menu-item>
         <a-menu-item key="devices">
           <MobileOutlined />
           <span>Devices</span>
@@ -53,6 +69,10 @@ import { useRouter, useRoute } from 'vue-router'
 import {
   DashboardOutlined,
   ProjectOutlined,
+  AppstoreOutlined,
+  AndroidOutlined,
+  CodeOutlined,
+  FileTextOutlined,
   MobileOutlined,
   PlayCircleOutlined,
   KeyOutlined,

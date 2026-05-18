@@ -50,4 +50,33 @@ export const getTasks = () => api.get('/api/tasks')
 export const createTask = (data) => api.post('/api/tasks', data)
 export const executeTask = (taskId) => api.post(`/api/tasks/${taskId}/execute`)
 
+// APK Management
+export const getApks = (projectId) => api.get(`/api/projects/${projectId}/apks`)
+export const uploadApk = (projectId, file, version, description) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (version) formData.append('version', version)
+  if (description) formData.append('description', description)
+  return api.post(`/api/projects/${projectId}/apks`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+export const deleteApk = (projectId, apkId) => api.delete(`/api/projects/${projectId}/apks/${apkId}`)
+
+// Case update/delete
+export const updateCase = (projectId, caseId, data) => api.put(`/api/projects/${projectId}/cases/${caseId}`, data)
+export const deleteCase = (projectId, caseId) => api.delete(`/api/projects/${projectId}/cases/${caseId}`)
+
+// Device TCP/IP
+export const tcpipDevice = (serial, port = 5555) => api.post('/api/devices/tcpip', { serial, port })
+export const connectDevice = (ip, port = 5555) => api.post('/api/devices/connect', { ip, port })
+export const disconnectDevice = (ip, port = 5555) => api.post('/api/devices/disconnect', { ip, port })
+
+// Element update/delete
+export const updateElement = (projectId, pageId, elementId, data) => api.put(`/api/projects/${projectId}/pages/${pageId}/elements/${elementId}`, data)
+export const deleteElement = (projectId, pageId, elementId) => api.delete(`/api/projects/${projectId}/pages/${pageId}/elements/${elementId}`)
+
+// Script delete
+export const deleteScript = (projectId, scriptId) => api.delete(`/api/projects/${projectId}/scripts/${scriptId}`)
+
 export default api

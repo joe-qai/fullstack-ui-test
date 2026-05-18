@@ -5,6 +5,7 @@ import ProjectDetail from '../views/ProjectDetail.vue'
 import Devices from '../views/Devices.vue'
 import Tasks from '../views/Tasks.vue'
 import Keywords from '../views/Keywords.vue'
+import Debug from '../views/Debug.vue'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -14,6 +15,7 @@ const routes = [
   { path: '/devices', component: Devices, name: 'Devices' },
   { path: '/tasks', component: Tasks, name: 'Tasks' },
   { path: '/keywords', component: Keywords, name: 'Keywords' },
+  { path: '/debug', component: Debug, name: 'Debug' },
 ]
 
 const router = createRouter({

@@ -30,6 +30,10 @@
           <KeyOutlined />
           <span>Keywords</span>
         </a-menu-item>
+        <a-menu-item key="debug">
+          <BugOutlined />
+          <span>Debug</span>
+        </a-menu-item>
       </a-menu>
     </a-layout-sider>
     <a-layout>
@@ -52,6 +56,7 @@ import {
   MobileOutlined,
   PlayCircleOutlined,
   KeyOutlined,
+  BugOutlined,
 } from '@ant-design/icons-vue'
 
 const router = useRouter()

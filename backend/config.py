@@ -5,10 +5,12 @@ BASE_DIR = Path(__file__).parent.parent
 DB_PATH = BASE_DIR / "data" / "autotest.db"
 SCRIPTS_DIR = BASE_DIR / "scripts"
 REPORTS_DIR = BASE_DIR / "reports"
+APKS_DIR = BASE_DIR / "data" / "apks"
 
 os.makedirs(DB_PATH.parent, exist_ok=True)
 os.makedirs(SCRIPTS_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
+os.makedirs(APKS_DIR, exist_ok=True)
 
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
@@ -18,10 +20,11 @@ class Settings:
     database_url: str = DATABASE_URL
     scripts_dir: Path = SCRIPTS_DIR
     reports_dir: Path = REPORTS_DIR
+    apks_dir: Path = APKS_DIR
     adb_path: str = "adb"
     device_scan_interval: int = 30
     host: str = "0.0.0.0"
     port: int = 8000
-    cors_origins: list = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: list = ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"]
 
 settings = Settings()

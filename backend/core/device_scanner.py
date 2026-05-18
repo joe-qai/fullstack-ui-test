@@ -64,3 +64,31 @@ class DeviceScanner:
         if status:
             query = query.filter(Device.status == status)
         return query.all()
+
+    @staticmethod
+    def tcpip_device(serial: str, port: int = 5555) -> dict:
+        try:
+            result = subprocess.run([settings.adb_path, "-s", serial, "tcpip", str(port)], capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                return {"success": True, "message": f"Device {serial} switched to TCP/IP mode on port {port}"}
+            return {"success": False, "message": result.stderr.strip()}
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            return {"success": False, "message": str(e)}
+
+    @staticmethod
+    def connect_device(ip: str, port: int = 5555) -> dict:
+        try:
+            result = subprocess.run([settings.adb_path, "connect", f"{ip}:{port}"], capture_output=True, text=True, timeout=10)
+            if "connected" in result.stdout.lower():
+                return {"success": True, "message": f"Connected to {ip}:{port}", "serial": f"{ip}:{port}"}
+            return {"success": False, "message": result.stdout.strip()}
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            return {"success": False, "message": str(e)}
+
+    @staticmethod
+    def disconnect_device(ip: str, port: int = 5555) -> dict:
+        try:
+            result = subprocess.run([settings.adb_path, "disconnect", f"{ip}:{port}"], capture_output=True, text=True, timeout=10)
+            return {"success": True, "message": f"Disconnected from {ip}:{port}"}
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
+            return {"success": False, "message": str(e)}

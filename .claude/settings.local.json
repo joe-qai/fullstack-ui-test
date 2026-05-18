@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking",
+      "Skill(superpowers:writing-plans)",
+      "Bash(pip --version)",
+      "Bash(npm --version)",
+      "Bash(pip list *)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(pip install *)",
+      "Bash(python *)",
+      "Bash(set PYTHONPATH=C:/pythonworkspace/MultiUiAutoTest/backend)",
+      "Bash(sqlite3 C:/pythonworkspace/MultiUiAutoTest/data/autotest.db \".tables\")",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/api/keywords)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :8000)",
+      "Bash(curl -s http://localhost:8001/health)",
+      "Bash(curl -s http://localhost:8001/api/keywords)",
+      "Bash(curl *)",
+      "Bash(npx create-vue@latest frontend --template vanilla --force)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(uiauto.dev --help)",
+      "Bash(uiauto.dev server *)"
+    ]
+  }
+}

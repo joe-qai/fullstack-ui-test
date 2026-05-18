@@ -1,8 +1,12 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from models.base import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class PageObject(Base):
@@ -11,5 +15,5 @@ class PageObject(Base):
     project_id = Column(String, ForeignKey("projects.id"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     elements = relationship("Element", back_populates="page_object", cascade="all, delete-orphan")

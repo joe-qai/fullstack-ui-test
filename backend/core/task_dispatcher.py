@@ -1,6 +1,6 @@
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from db.database import SessionLocal
@@ -120,7 +120,7 @@ class TaskDispatcher:
 
         # Update result
         result.status = "running"
-        result.start_time = datetime.utcnow()
+        result.start_time = datetime.now(timezone.utc)
         db.commit()
 
         try:
@@ -135,14 +135,14 @@ class TaskDispatcher:
 
             # Update result
             result.status = execution_result.get("status", "failed")
-            result.end_time = datetime.utcnow()
+            result.end_time = datetime.now(timezone.utc)
             db.commit()
 
             return execution_result
 
         except Exception as e:
             result.status = "failed"
-            result.end_time = datetime.utcnow()
+            result.end_time = datetime.now(timezone.utc)
             db.commit()
 
             return {"status": "failed", "error": str(e)}

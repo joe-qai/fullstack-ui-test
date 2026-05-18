@@ -1,7 +1,11 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, DateTime
 from models.base import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class Project(Base):
@@ -10,4 +14,4 @@ class Project(Base):
     name = Column(String, nullable=False)
     app_id = Column(String)
     platform = Column(String, default="android")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)

@@ -1,7 +1,7 @@
 import os
 import subprocess
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 from executors.base_executor import BaseExecutor
@@ -22,7 +22,7 @@ class ScriptExecutor(BaseExecutor):
     def _log(self, message: str, level: str = "INFO"):
         """Add a log entry."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": level,
             "message": message,
         }

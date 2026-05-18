@@ -1,7 +1,7 @@
 import os
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from executors.base_executor import BaseExecutor
@@ -22,7 +22,7 @@ class AndroidExecutor(BaseExecutor):
     def _log(self, message: str, level: str = "INFO"):
         """Add a log entry."""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": level,
             "message": message,
             "step": self.current_step,

@@ -1,8 +1,12 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
 from models.base import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class TestTask(Base):
@@ -11,5 +15,5 @@ class TestTask(Base):
     case_id = Column(String, ForeignKey("test_cases.id"), nullable=False)
     device_ids = Column(Text, nullable=False)
     status = Column(String, default="pending")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     results = relationship("TaskResult", back_populates="test_task", cascade="all, delete-orphan")

@@ -1,7 +1,11 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, ForeignKey, Text, DateTime
 from models.base import Base
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class Script(Base):
@@ -14,4 +18,4 @@ class Script(Base):
     description = Column(String)
     classes = Column(Text)
     methods = Column(Text)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=utc_now)

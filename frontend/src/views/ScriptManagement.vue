@@ -18,20 +18,22 @@
     </a-table>
     <a-empty v-else description="请先选择项目" style="margin-top: 48px" />
 
-    <a-upload v-if="selectedProject" :custom-request="handleUpload" accept=".py" style="margin-top: 16px">
-      <a-button type="primary">上传脚本</a-button>
+    <a-upload v-if="selectedProject" :custom-request="handleUpload" accept=".py" style="margin-top: 16px" :show-upload-list="false">
+      <a-button type="primary" :loading="uploading">上传脚本</a-button>
     </a-upload>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, h } from 'vue'
+import { message } from 'ant-design-vue'
 import { getProjects, getScripts, uploadScript, deleteScript as deleteScriptApi } from '../api'
 
 const projects = ref([])
 const selectedProject = ref(null)
 const scripts = ref([])
 const loading = ref(false)
+const uploading = ref(false)
 
 const columns = [
   { title: '名称', dataIndex: 'name', key: 'name' },
@@ -66,11 +68,15 @@ const fetchData = async () => {
 }
 
 const handleUpload = async ({ file }) => {
+  uploading.value = true
   try {
     await uploadScript(selectedProject.value, file)
+    message.success('脚本上传成功')
     fetchData()
   } catch (error) {
-    console.error('Failed to upload script:', error)
+    message.error('脚本上传失败: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    uploading.value = false
   }
 }
 

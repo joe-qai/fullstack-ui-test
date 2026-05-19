@@ -79,4 +79,7 @@ export const deleteElement = (projectId, pageId, elementId) => api.delete(`/api/
 // Script delete
 export const deleteScript = (projectId, scriptId) => api.delete(`/api/projects/${projectId}/scripts/${scriptId}`)
 
+// Stats
+export const getStats = () => api.get('/api/stats')
+
 export default api

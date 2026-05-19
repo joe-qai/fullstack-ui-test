@@ -1,54 +1,46 @@
 <template>
   <div class="dashboard">
-    <a-page-header title="Dashboard" sub-title="UI Automation Test Platform" />
-
+    <a-page-header title="仪表盘" sub-title="UI 自动化测试平台" />
     <a-row :gutter="[16, 16]" style="margin-top: 24px">
       <a-col :span="6">
         <a-card>
-          <a-statistic title="Projects" :value="stats.projects" />
+          <a-statistic title="项目数" :value="stats.projects" />
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="Test Cases" :value="stats.cases" />
+          <a-statistic title="用例数" :value="stats.cases" />
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="Devices" :value="stats.devices" />
+          <a-statistic title="设备数" :value="stats.devices" />
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="Tasks" :value="stats.tasks" />
+          <a-statistic title="任务数" :value="stats.tasks" />
         </a-card>
       </a-col>
     </a-row>
-
     <a-row :gutter="[16, 16]" style="margin-top: 24px">
       <a-col :span="12">
-        <a-card title="Recent Tasks">
+        <a-card title="近期任务">
           <a-list :data-source="recentTasks" :loading="loading">
             <template #renderItem="{ item }">
               <a-list-item>
-                <a-list-item-meta
-                  :title="item.id"
-                  :description="`Status: ${item.status}`"
-                />
+                <a-list-item-meta :title="item.id" :description="`状态: ${item.status}`" />
               </a-list-item>
             </template>
           </a-list>
         </a-card>
       </a-col>
       <a-col :span="12">
-        <a-card title="Online Devices">
+        <a-card title="在线设备">
           <a-list :data-source="onlineDevices" :loading="loading">
             <template #renderItem="{ item }">
               <a-list-item>
-                <a-list-item-meta
-                  :title="item.name || item.serial"
-                  :description="`Platform: ${item.platform}`"
-                />
+                <a-list-item-meta :title="item.name || item.serial" :description="`平台: ${item.platform}`" />
               </a-list-item>
             </template>
           </a-list>
@@ -60,7 +52,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getProjects, getDevices, getTasks } from '../api'
+import { getStats, getDevices, getTasks } from '../api'
 
 const stats = ref({ projects: 0, cases: 0, devices: 0, tasks: 0 })
 const recentTasks = ref([])
@@ -70,14 +62,12 @@ const loading = ref(false)
 onMounted(async () => {
   loading.value = true
   try {
-    const [projectsRes, devicesRes, tasksRes] = await Promise.all([
-      getProjects(),
+    const [statsRes, devicesRes, tasksRes] = await Promise.all([
+      getStats(),
       getDevices(),
       getTasks(),
     ])
-    stats.value.projects = projectsRes.data.length
-    stats.value.devices = devicesRes.data.length
-    stats.value.tasks = tasksRes.data.length
+    stats.value = statsRes.data
     recentTasks.value = tasksRes.data.slice(0, 5)
     onlineDevices.value = devicesRes.data.filter(d => d.status === 'online')
   } catch (error) {

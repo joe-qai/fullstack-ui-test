@@ -1,11 +1,11 @@
 <template>
   <div class="projects">
     <a-page-header
-      title="Projects"
-      sub-title="Manage your test projects"
+      title="项目管理"
+      sub-title="管理你的测试项目"
     >
       <template #extra>
-        <a-button type="primary" @click="showModal = true">Create Project</a-button>
+        <a-button type="primary" @click="showModal = true">创建项目</a-button>
       </template>
     </a-page-header>
 
@@ -17,24 +17,24 @@
       style="margin-top: 24px"
     >
       <template #action="{ record }">
-        <a-button type="link" @click="viewProject(record.id)">View</a-button>
-        <a-button type="link" danger @click="deleteProject(record.id)">Delete</a-button>
+        <a-button type="link" @click="viewProject(record.id)">查看</a-button>
+        <a-button type="link" danger @click="onDeleteClick(record)">删除</a-button>
       </template>
     </a-table>
 
     <a-modal
       v-model:open="showModal"
-      title="Create Project"
+      title="创建项目"
       @ok="handleCreate"
     >
       <a-form :model="form" layout="vertical">
-        <a-form-item label="Name" required>
+        <a-form-item label="名称" required>
           <a-input v-model:value="form.name" />
         </a-form-item>
         <a-form-item label="App ID">
           <a-input v-model:value="form.app_id" />
         </a-form-item>
-        <a-form-item label="Platform">
+        <a-form-item label="平台">
           <a-select v-model:value="form.platform">
             <a-select-option value="android">Android</a-select-option>
             <a-select-option value="ios">iOS</a-select-option>
@@ -43,11 +43,22 @@
         </a-form-item>
       </a-form>
     </a-modal>
+
+    <!-- 删除确认弹窗 -->
+    <a-modal
+      v-model:open="showDeleteModal"
+      :title="deleteModalTitle"
+      :ok-button-props="deleteOkProps"
+      @ok="handleDeleteConfirm"
+      @cancel="showDeleteModal = false"
+    >
+      <p>{{ deleteModalContent }}</p>
+    </a-modal>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getProjects, createProject, deleteProject as deleteProjectApi } from '../api'
 
@@ -58,12 +69,19 @@ const showModal = ref(false)
 const form = ref({ name: '', app_id: '', platform: 'android' })
 
 const columns = [
-  { title: 'Name', dataIndex: 'name', key: 'name' },
+  { title: '项目名称', dataIndex: 'name', key: 'name' },
   { title: 'App ID', dataIndex: 'app_id', key: 'app_id' },
-  { title: 'Platform', dataIndex: 'platform', key: 'platform' },
-  { title: 'Created', dataIndex: 'created_at', key: 'created_at' },
-  { title: 'Action', key: 'action', slots: { customRender: 'action' } },
+  { title: '平台', dataIndex: 'platform', key: 'platform' },
+  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+  { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
+
+const showDeleteModal = ref(false)
+const deleteModalTitle = ref('')
+const deleteModalContent = ref('')
+const deleteOkProps = ref({})
+const pendingDeleteId = ref(null)
+const pendingDeleteHasData = ref(false)
 
 const fetchProjects = async () => {
   loading.value = true
@@ -92,16 +110,31 @@ const viewProject = (id) => {
   router.push(`/projects/${id}`)
 }
 
-const deleteProject = async (id) => {
+const onDeleteClick = (record) => {
+  // 占位：后续 Task 13 会接入 stats API
+  pendingDeleteId.value = record.id
+  pendingDeleteHasData.value = false
+  deleteModalTitle.value = '确认删除'
+  deleteModalContent.value = `确定删除项目「${record.name}」吗？删除后不可恢复。`
+  deleteOkProps.value = { danger: true }
+  showDeleteModal.value = true
+}
+
+const handleDeleteConfirm = async () => {
+  if (pendingDeleteHasData.value) {
+    showDeleteModal.value = false
+    return
+  }
   try {
-    await deleteProjectApi(id)
+    await deleteProjectApi(pendingDeleteId.value)
+    showDeleteModal.value = false
     fetchProjects()
   } catch (error) {
     console.error('Failed to delete project:', error)
   }
 }
 
-onMounted(fetchProjects)
+fetchProjects()
 </script>
 
 <style scoped>

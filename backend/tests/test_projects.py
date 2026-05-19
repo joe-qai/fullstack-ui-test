@@ -46,3 +46,15 @@ def test_delete_project():
 
     get_res = client.get(f"/api/projects/{pid}")
     assert get_res.status_code == 404
+
+def test_get_project_stats():
+    response = client.post("/api/projects", json={"name": "StatsTest", "platform": "android"})
+    assert response.status_code == 200
+    project_id = response.json()["id"]
+    response = client.get(f"/api/projects/{project_id}/stats")
+    assert response.status_code == 200
+    data = response.json()
+    assert "pages" in data
+    assert "cases" in data
+    assert "scripts" in data
+    assert isinstance(data["pages"], int)

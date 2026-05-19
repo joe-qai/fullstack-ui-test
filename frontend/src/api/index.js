@@ -87,4 +87,7 @@ export const deleteKeyword = (id) => api.delete(`/api/keywords/${id}`)
 // Stats
 export const getStats = () => api.get('/api/stats')
 
+// Project stats
+export const getProjectStats = (id) => api.get(`/api/projects/${id}/stats`)
+
 export default api

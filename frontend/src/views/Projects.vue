@@ -60,7 +60,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProjects, createProject, deleteProject as deleteProjectApi } from '../api'
+import { message } from 'ant-design-vue'
+import { getProjects, createProject, deleteProject as deleteProjectApi, getProjectStats } from '../api'
 
 const router = useRouter()
 const projects = ref([])
@@ -110,14 +111,27 @@ const viewProject = (id) => {
   router.push(`/projects/${id}`)
 }
 
-const onDeleteClick = (record) => {
-  // 占位：后续 Task 13 会接入 stats API
+const onDeleteClick = async (record) => {
   pendingDeleteId.value = record.id
-  pendingDeleteHasData.value = false
-  deleteModalTitle.value = '确认删除'
-  deleteModalContent.value = `确定删除项目「${record.name}」吗？删除后不可恢复。`
-  deleteOkProps.value = { danger: true }
-  showDeleteModal.value = true
+  try {
+    const res = await getProjectStats(record.id)
+    const stats = res.data
+    const total = stats.pages + stats.cases + stats.scripts
+    if (total > 0) {
+      pendingDeleteHasData.value = true
+      deleteModalTitle.value = '无法删除'
+      deleteModalContent.value = `该项目下存在 ${stats.pages} 个页面、${stats.cases} 个用例、${stats.scripts} 个脚本，请先清除所有关联数据后再删除。`
+      deleteOkProps.value = { style: { display: 'none' } }
+    } else {
+      pendingDeleteHasData.value = false
+      deleteModalTitle.value = '确认删除'
+      deleteModalContent.value = `确定删除项目「${record.name}」吗？删除后不可恢复。`
+      deleteOkProps.value = { danger: true }
+    }
+    showDeleteModal.value = true
+  } catch (error) {
+    message.error('获取项目统计失败: ' + (error.response?.data?.detail || error.message))
+  }
 }
 
 const handleDeleteConfirm = async () => {

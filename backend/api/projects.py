@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List
 from db.database import get_db
 from models.project import Project
+from models.page_object import PageObject
+from models.test_case import TestCase
+from models.script import Script
 from schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -37,6 +40,16 @@ def update_project(project_id: str, project: ProjectUpdate, db: Session = Depend
     db.commit()
     db.refresh(db_project)
     return db_project
+
+@router.get("/{project_id}/stats")
+def get_project_stats(project_id: str, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    page_count = db.query(PageObject).filter(PageObject.project_id == project_id).count()
+    case_count = db.query(TestCase).filter(TestCase.project_id == project_id).count()
+    script_count = db.query(Script).filter(Script.project_id == project_id).count()
+    return {"pages": page_count, "cases": case_count, "scripts": script_count}
 
 @router.delete("/{project_id}")
 def delete_project(project_id: str, db: Session = Depends(get_db)):

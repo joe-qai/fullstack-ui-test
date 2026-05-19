@@ -71,6 +71,7 @@ export const deleteCase = (projectId, caseId) => api.delete(`/api/projects/${pro
 export const tcpipDevice = (serial, port = 5555) => api.post('/api/devices/tcpip', { serial, port })
 export const connectDevice = (ip, port = 5555) => api.post('/api/devices/connect', { ip, port })
 export const disconnectDevice = (ip, port = 5555) => api.post('/api/devices/disconnect', { ip, port })
+export const connectDeviceOneClick = (serial) => api.post(`/api/devices/${serial}/connect`)
 
 // Element update/delete
 export const updateElement = (projectId, pageId, elementId, data) => api.put(`/api/projects/${projectId}/pages/${pageId}/elements/${elementId}`, data)

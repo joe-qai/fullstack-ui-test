@@ -1,11 +1,13 @@
 import json
+import subprocess
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from db.database import get_db
+from db.database import get_db, SessionLocal
 from models.device import Device
 from schemas.device import DeviceResponse
 from core.device_scanner import DeviceScanner
+from config import settings
 
 router = APIRouter(prefix="/api", tags=["devices"])
 
@@ -81,3 +83,48 @@ def disconnect_device(req: DisconnectRequest):
     DeviceScanner.sync_devices(db)
     db.close()
     return result
+
+@router.post("/devices/{serial}/connect")
+def connect_device_one_click(serial: str):
+    """一键连接 USB 设备：先 adb tcpip 开放端口，再 adb connect。"""
+    # 1. 切换到 tcpip 模式
+    tcpip_result = DeviceScanner.tcpip_device(serial, 5555)
+    if not tcpip_result["success"]:
+        raise HTTPException(status_code=400, detail=tcpip_result["message"])
+
+    # 2. 获取设备 IP
+    import time
+    time.sleep(1)
+    devices_dict = DeviceScanner.scan_devices()
+    ip = ""
+    # 尝试从 adb shell 获取 IP
+    try:
+        result = subprocess.run(
+            [settings.adb_path, "-s", serial, "shell", "ip", "route"],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in result.stdout.split("\n"):
+            if "src" in line:
+                parts = line.split()
+                if "src" in parts:
+                    idx = parts.index("src")
+                    if idx + 1 < len(parts):
+                        ip = parts[idx + 1]
+                        break
+    except Exception:
+        pass
+
+    if not ip:
+        raise HTTPException(status_code=400, detail="无法获取设备 IP 地址")
+
+    # 3. 连接
+    connect_result = DeviceScanner.connect_device(ip, 5555)
+    if not connect_result["success"]:
+        raise HTTPException(status_code=400, detail=connect_result["message"])
+
+    # 4. 同步设备列表
+    db = SessionLocal()
+    DeviceScanner.sync_devices(db)
+    db.close()
+
+    return {"success": True, "message": f"已连接 {ip}:5555", "serial": f"{ip}:5555"}

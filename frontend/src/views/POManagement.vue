@@ -29,6 +29,9 @@
         <a-form-item label="描述">
           <a-input v-model:value="pageForm.description" />
         </a-form-item>
+        <a-form-item label="所属项目">
+          <span style="color: #666">{{ selectedProjectName }}</span>
+        </a-form-item>
       </a-form>
     </a-modal>
 
@@ -59,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h } from 'vue'
+import { ref, onMounted, h, computed } from 'vue'
 import { getProjects, getPages, createPage, deletePage, createElement, deleteElement } from '../api'
 
 const projects = ref([])
@@ -69,6 +72,11 @@ const loading = ref(false)
 const showPageModal = ref(false)
 const showElementModalFlag = ref(false)
 const currentPageId = ref(null)
+
+const selectedProjectName = computed(() => {
+  const p = projects.value.find(p => p.id === selectedProject.value)
+  return p ? p.name : ''
+})
 
 const pageForm = ref({ name: '', description: '' })
 const elementForm = ref({ name: '', locator_type: 'id', locator_value: '', description: '' })

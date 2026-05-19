@@ -24,7 +24,7 @@ class Settings:
     adb_path: str = "adb"
     device_scan_interval: int = 30
     host: str = "0.0.0.0"
-    port: int = 8000
-    cors_origins: list = ["http://localhost:5173", "http://localhost:3000", "http://localhost:8000"]
+    port: int = 9000
+    cors_origins: list = ["http://localhost:5173", "http://localhost:3000", "http://localhost:9000"]
 
 settings = Settings()

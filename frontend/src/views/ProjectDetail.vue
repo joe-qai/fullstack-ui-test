@@ -57,7 +57,7 @@
           <a-input v-model:value="pageForm.description" />
         </a-form-item>
         <a-form-item label="所属项目">
-          <a-input v-model:value="project?.name" disabled />
+          <a-input :value="project?.name || ''" disabled />
         </a-form-item>
       </a-form>
     </a-modal>

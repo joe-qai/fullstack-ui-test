@@ -25,10 +25,23 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
+    # Drop all first to ensure clean state
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    # Seed keywords
-    from db.init_db import init_db
-    init_db()
+    # Seed keywords using test session
+    from models.keyword import Keyword
+    from db.init_db import BUILTIN_KEYWORDS
+    import json
+    db = TestingSessionLocal()
+    try:
+        for kw_data in BUILTIN_KEYWORDS:
+            existing = db.query(Keyword).filter(Keyword.name == kw_data["name"]).first()
+            if not existing:
+                kw = Keyword(**kw_data)
+                db.add(kw)
+        db.commit()
+    finally:
+        db.close()
     yield
     Base.metadata.drop_all(bind=engine)
 

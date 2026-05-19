@@ -81,6 +81,7 @@ export const deleteElement = (projectId, pageId, elementId) => api.delete(`/api/
 export const deleteScript = (projectId, scriptId) => api.delete(`/api/projects/${projectId}/scripts/${scriptId}`)
 
 // Keywords CRUD
+export const createCustomKeyword = (projectId, data) => api.post(`/api/projects/${projectId}/custom-keywords`, data)
 export const updateKeyword = (id, data) => api.put(`/api/keywords/${id}`, data)
 export const deleteKeyword = (id) => api.delete(`/api/keywords/${id}`)
 

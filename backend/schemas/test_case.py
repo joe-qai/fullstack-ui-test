@@ -43,7 +43,9 @@ class TestCaseUpdate(BaseModel):
     name: str | None = None
     type: str | None = None
     description: str | None = None
+    depends_on: str | None = None
     script_id: str | None = None
+    steps: list[CaseStepCreate] | None = None
 
 class TestCaseResponse(TestCaseBase):
     model_config = ConfigDict(from_attributes=True)

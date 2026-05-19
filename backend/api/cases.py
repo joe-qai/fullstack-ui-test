@@ -20,6 +20,7 @@ def create_case(project_id: str, case: TestCaseCreate, db: Session = Depends(get
         name=case.name,
         type=case.type,
         description=case.description,
+        depends_on=case.depends_on,
         script_id=case.script_id,
     )
     db.add(db_case)
@@ -55,6 +56,20 @@ def update_case(project_id: str, case_id: str, case: TestCaseUpdate, db: Session
     for key, value in update_data.items():
         if key != "steps":
             setattr(db_case, key, value)
+    # If steps are provided, replace all existing steps
+    if "steps" in update_data and update_data["steps"] is not None:
+        # Delete existing steps
+        db.query(CaseStep).filter(CaseStep.case_id == case_id).delete()
+        # Add new steps
+        for step_data in update_data["steps"]:
+            db_step = CaseStep(
+                case_id=case_id,
+                keyword_id=step_data.get("keyword_id"),
+                po_element_id=step_data.get("po_element_id"),
+                params=json.dumps(step_data.get("params")) if step_data.get("params") else None,
+                step_order=step_data.get("step_order", 0),
+            )
+            db.add(db_step)
     db.commit()
     db.refresh(db_case)
     return db_case

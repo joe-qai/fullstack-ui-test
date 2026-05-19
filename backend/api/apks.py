@@ -61,3 +61,10 @@ def delete_apk(project_id: str, apk_id: str, db: Session = Depends(get_db)):
     db.delete(apk)
     db.commit()
     return {"message": "APK deleted"}
+
+@router.get("/{project_id}/apks/{apk_id}", response_model=APKPackageResponse)
+def get_apk(project_id: str, apk_id: str, db: Session = Depends(get_db)):
+    apk = db.query(APKPackage).filter(APKPackage.id == apk_id, APKPackage.project_id == project_id).first()
+    if not apk:
+        raise HTTPException(status_code=404, detail="APK not found")
+    return apk

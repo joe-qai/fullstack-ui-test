@@ -1,12 +1,17 @@
 import logging
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from config import settings
 from db.database import engine, Base
 from db.init_db import init_db
 from api import api_router
+
+# Frontend built files directory
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
 # Configure logging
 logging.basicConfig(
@@ -76,10 +81,24 @@ def health_check():
     return {"status": "ok", "version": settings.version}
 
 
-@app.get("/api/debug/uiautodev/status")
-def uiautodev_status():
-    from core.uiautodev_manager import uiautodev_manager
-    return uiautodev_manager.get_status()
+# Serve frontend static files (assets, favicon, etc.)
+if FRONTEND_DIST.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="frontend-assets")
+
+
+# SPA fallback: serve index.html for any non-API, non-static route
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve the Vue frontend SPA for all non-API routes."""
+    # Check if a specific static file exists (e.g. favicon.ico)
+    file_path = FRONTEND_DIST / full_path
+    if file_path.is_file():
+        return FileResponse(file_path)
+    # Otherwise serve index.html for SPA routing
+    index_path = FRONTEND_DIST / "index.html"
+    if index_path.exists():
+        return FileResponse(index_path)
+    return JSONResponse(status_code=404, content={"detail": "Frontend not built. Run: cd frontend && npm run build"})
 
 
 if __name__ == "__main__":

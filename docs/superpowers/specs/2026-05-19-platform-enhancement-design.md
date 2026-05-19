@@ -41,9 +41,13 @@
 
 - 新增 `ReportGenerator` 模块：任务完成后自动生成报告
 - 报告内容：通过/失败统计、每步骤执行日志、设备信息、执行时间、用例名称
-- 报告格式：HTML（自包含，所有 CSS/图片等外部引用转 base64 内嵌，直接存数据库字段）+ PDF（下载时按需生成，使用 `weasyprint` 转换）
-- HTML 存储：完整 HTML 内容存入 Report 模型的 `content` 字段（Text 类型），查看时 API 直接返回字符串，无需文件系统依赖
-- PDF 存储：按需生成后缓存在 `reports/{task_id}/report.pdf`
+- 执行过程中的截图也转 base64 内嵌到 HTML 中，本地不保存任何图片文件
+- 报告存储策略：**纯数据库存储，不写本地文件**
+  - 生成自包含 HTML（所有 CSS 内联、所有截图/图片转 base64 `<img>` 标签内嵌）
+  - 完整 HTML 内容存入 Report 模型的 `content` 字段（Text 类型）
+  - 本地不保存 HTML 文件、不保存 PDF 文件、不保存图片文件
+  - 查看/下载均从数据库 content 字段读取，PDF 按需从 HTML 内容实时转换
+  - 下载 HTML 格式时直接返回 content 字段内容，下载 PDF 格式时用 `weasyprint` 从 content 实时转换
 
 ### 1.3 报告数据模型
 
@@ -52,9 +56,9 @@ class Report(Base):
     __tablename__ = "reports"
     id = Column(String, primary_key=True, default=lambda: f"rpt_{uuid.uuid4().hex[:8]}")
     task_id = Column(String, ForeignKey("test_tasks.id"), nullable=False)
-    content = Column(Text, nullable=False)  # 自包含 HTML（CSS/图片转 base64 内嵌）
-    pdf_path = Column(String)               # 按需生成的 PDF 缓存路径
+    content = Column(Text, nullable=False)  # 自包含 HTML（CSS内联 + 截图base64内嵌）
     created_at = Column(DateTime, default=utc_now)
+    # 无 html_path / pdf_path 字段，全部存数据库
 ```
 
 ### 1.4 报告 API
@@ -62,7 +66,7 @@ class Report(Base):
 | 端点 | 方法 | 说明 |
 |------|------|------|
 | `/api/tasks/{id}/report` | GET | 直接返回 HTML 字符串（前端渲染） |
-| `/api/tasks/{id}/report/download?format=pdf|html` | GET | 下载报告文件（PDF 按需生成，HTML 返回 content 字段） |
+| `/api/tasks/{id}/report/download?format=pdf|html` | GET | html=返回 content，pdf=weasyprint 实时转换 |
 | `/api/reports` | GET | 报告列表（不含 content，仅元数据） |
 
 ### 1.5 前端改动

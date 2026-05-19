@@ -80,6 +80,10 @@ export const deleteElement = (projectId, pageId, elementId) => api.delete(`/api/
 // Script delete
 export const deleteScript = (projectId, scriptId) => api.delete(`/api/projects/${projectId}/scripts/${scriptId}`)
 
+// Keywords CRUD
+export const updateKeyword = (id, data) => api.put(`/api/keywords/${id}`, data)
+export const deleteKeyword = (id) => api.delete(`/api/keywords/${id}`)
+
 // Stats
 export const getStats = () => api.get('/api/stats')
 

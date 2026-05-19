@@ -40,6 +40,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import { getProjects, getApks, uploadApk, deleteApk } from '../api'
 
 const projects = ref([])
@@ -75,7 +76,8 @@ const fetchData = async () => {
     const res = await getApks(selectedProject.value)
     apks.value = res.data
   } catch (error) {
-    console.error('Failed to fetch APKs:', error)
+    message.error('获取APK列表失败: ' + (error.response?.data?.detail || error.message))
+    apks.value = []
   } finally {
     loading.value = false
   }
@@ -97,13 +99,14 @@ const handleUpload = async () => {
   uploading.value = true
   try {
     await uploadApk(selectedProject.value, apkFile.value, uploadForm.value.version, uploadForm.value.description)
+    message.success('APK 上传成功')
     showUploadModal.value = false
     apkFile.value = null
     fileList.value = []
     uploadForm.value = { version: '', description: '' }
     fetchData()
   } catch (error) {
-    console.error('Failed to upload APK:', error)
+    message.error('APK 上传失败: ' + (error.response?.data?.detail || error.message))
   } finally {
     uploading.value = false
   }

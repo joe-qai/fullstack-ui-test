@@ -108,6 +108,74 @@ class ScriptExecutor(BaseExecutor):
 
         return result
 
+    def run_script(self, script: Script, device: Device, project: Project = None) -> Dict:
+        """Execute a Script object directly (without a TestCase wrapper)."""
+        result = {
+            "status": "pending",
+            "logs": [],
+            "stdout": "",
+            "stderr": "",
+            "exit_code": None,
+            "error": None,
+        }
+
+        try:
+            # 1. Get script file path
+            script_path = script.file_path
+            if not os.path.exists(script_path):
+                result["status"] = "failed"
+                result["error"] = f"Script file not found: {script_path}"
+                return result
+
+            # 2. Build environment
+            env = os.environ.copy()
+            env["DEVICE_SERIAL"] = device.serial
+            if project and project.app_id:
+                env["APP_PACKAGE"] = project.app_id
+
+            # 3. Execute script
+            self._log(f"Executing script: {script_path} on device {device.serial}")
+
+            self.process = subprocess.Popen(
+                ["python", script_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env,
+                cwd=os.path.dirname(script_path),
+            )
+
+            # 4. Capture output
+            stdout, stderr = self.process.communicate()
+            result["stdout"] = stdout
+            result["stderr"] = stderr
+            result["exit_code"] = self.process.returncode
+
+            # 5. Parse logs
+            if stdout:
+                for line in stdout.strip().split("\n"):
+                    self._log(line, "INFO")
+            if stderr:
+                for line in stderr.strip().split("\n"):
+                    self._log(line, "ERROR")
+
+            # 6. Determine status
+            if self.process.returncode == 0:
+                result["status"] = "success"
+                self._log("Script executed successfully", "INFO")
+            else:
+                result["status"] = "failed"
+                self._log(f"Script failed with exit code {self.process.returncode}", "ERROR")
+
+            result["logs"] = self.logs
+
+        except Exception as e:
+            result["status"] = "failed"
+            result["error"] = str(e)
+            self._log(f"Script execution failed: {e}", "ERROR")
+
+        return result
+
     def get_device_info(self, device: Device) -> Dict:
         """Get device information for script execution."""
         return {

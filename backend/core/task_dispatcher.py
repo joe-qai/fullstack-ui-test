@@ -7,6 +7,7 @@ from db.database import SessionLocal
 from models.test_task import TestTask
 from models.task_result import TaskResult
 from models.test_case import TestCase
+from models.script import Script
 from models.device import Device
 from models.project import Project
 from executors.android_executor import AndroidExecutor
@@ -44,13 +45,21 @@ class TaskDispatcher:
             if not task:
                 return {"status": "failed", "error": "Task not found"}
 
-            # Get test case
-            test_case = db.query(TestCase).filter(TestCase.id == task.case_id).first()
-            if not test_case:
-                return {"status": "failed", "error": "Test case not found"}
+            # Load test_case or script based on task type
+            test_case = None
+            script = None
+            project = None
 
-            # Get project
-            project = db.query(Project).filter(Project.id == test_case.project_id).first()
+            if task.case_id:
+                test_case = db.query(TestCase).filter(TestCase.id == task.case_id).first()
+                if not test_case:
+                    return {"status": "failed", "error": "Test case not found"}
+                project = db.query(Project).filter(Project.id == test_case.project_id).first()
+            elif task.script_id:
+                script = db.query(Script).filter(Script.id == task.script_id).first()
+                if not script:
+                    return {"status": "failed", "error": "Script not found"}
+                project = db.query(Project).filter(Project.id == script.project_id).first()
 
             # Parse device IDs
             device_ids = json.loads(task.device_ids)
@@ -68,6 +77,7 @@ class TaskDispatcher:
                         self._execute_on_device,
                         task_id,
                         test_case,
+                        script,
                         device_id,
                         project,
                         db
@@ -99,8 +109,8 @@ class TaskDispatcher:
             if should_close:
                 db.close()
 
-    def _execute_on_device(self, task_id: str, test_case: TestCase, device_id: str,
-                           project: Project, db: Session) -> Dict:
+    def _execute_on_device(self, task_id: str, test_case: TestCase, script: Script,
+                           device_id: str, project: Project, db: Session) -> Dict:
         """Execute test on a single device."""
         # Get device
         device = db.query(Device).filter(Device.id == device_id).first()
@@ -124,14 +134,18 @@ class TaskDispatcher:
         db.commit()
 
         try:
-            # Select executor based on test case type
-            if test_case.type == "script":
+            # Select executor based on task type
+            if script:
+                # Task created with script_id — use ScriptExecutor.run_script()
                 executor = self.executors["script"]
-            else:
-                executor = self.executors["android"]
-
-            # Execute
-            execution_result = executor.run(test_case, device, project, db)
+                execution_result = executor.run_script(script, device, project)
+            elif test_case:
+                # Task created with case_id — use existing logic
+                if test_case.type == "script":
+                    executor = self.executors["script"]
+                else:
+                    executor = self.executors["android"]
+                execution_result = executor.run(test_case, device, project, db)
 
             # Update result
             result.status = execution_result.get("status", "failed")

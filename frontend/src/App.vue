@@ -12,11 +12,11 @@
       >
         <a-menu-item key="dashboard">
           <DashboardOutlined />
-          <span>Dashboard</span>
+          <span>仪表盘</span>
         </a-menu-item>
         <a-menu-item key="projects">
           <ProjectOutlined />
-          <span>Projects</span>
+          <span>项目管理</span>
         </a-menu-item>
         <a-menu-item key="po">
           <AppstoreOutlined />
@@ -36,19 +36,19 @@
         </a-menu-item>
         <a-menu-item key="devices">
           <MobileOutlined />
-          <span>Devices</span>
+          <span>设备管理</span>
         </a-menu-item>
         <a-menu-item key="tasks">
           <PlayCircleOutlined />
-          <span>Tasks</span>
+          <span>任务管理</span>
         </a-menu-item>
         <a-menu-item key="keywords">
           <KeyOutlined />
-          <span>Keywords</span>
+          <span>关键字管理</span>
         </a-menu-item>
         <a-menu-item key="debug">
           <BugOutlined />
-          <span>Debug</span>
+          <span>调试</span>
         </a-menu-item>
       </a-menu>
     </a-layout-sider>

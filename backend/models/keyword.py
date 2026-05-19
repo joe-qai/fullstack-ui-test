@@ -11,3 +11,4 @@ class Keyword(Base):
     platform = Column(String, default="all")
     params = Column(Text)
     description = Column(String)
+    code = Column(Text)

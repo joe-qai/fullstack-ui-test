@@ -16,6 +16,8 @@ from models.script import Script
 from models.device import Device
 from models.test_task import TestTask
 from models.task_result import TaskResult
+from models.apk_package import APKPackage
+from core.custom_keyword_loader import ensure_directory
 
 BUILTIN_KEYWORDS = [
     # L1 - basic operation keywords
@@ -35,17 +37,17 @@ BUILTIN_KEYWORDS = [
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    ensure_directory()  # 确保 custom_keywords 目录存在
     db = SessionLocal()
     try:
-        existing = db.query(Keyword).first()
-        if not existing:
-            for kw_data in BUILTIN_KEYWORDS:
+        for kw_data in BUILTIN_KEYWORDS:
+            existing = db.query(Keyword).filter(Keyword.name == kw_data["name"]).first()
+            if not existing:
                 kw = Keyword(**kw_data)
                 db.add(kw)
-            db.commit()
-            print(f"Seeded {len(BUILTIN_KEYWORDS)} built-in keywords")
-        else:
-            print("Keywords already seeded, skipping")
+        db.commit()
+        total = db.query(Keyword).count()
+        print(f"Seeded keywords: {total} total")
     finally:
         db.close()
 

@@ -2,10 +2,11 @@ from pydantic import BaseModel, ConfigDict
 
 class KeywordBase(BaseModel):
     name: str
-    category: str
+    category: str = "custom"
     platform: str = "all"
     params: str | None = None
     description: str | None = None
+    code: str | None = None
 
 class KeywordCreate(KeywordBase):
     pass

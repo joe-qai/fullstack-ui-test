@@ -119,6 +119,19 @@ class AndroidExecutor(BaseExecutor):
                 d.app_stop(package)
 
             else:
+                # Try custom keyword
+                from core.custom_keyword_loader import load_custom_keyword_function
+                custom_func = load_custom_keyword_function(keyword_name)
+                if custom_func:
+                    try:
+                        element = None
+                        if locator:
+                            element = self._find_element(d, locator)
+                        custom_func(d, element, params)
+                        return True
+                    except Exception as e:
+                        self._log(f"Custom keyword {keyword_name} failed: {e}", "ERROR")
+                        return False
                 self._log(f"Unknown keyword: {keyword_name}", "ERROR")
                 return False
 

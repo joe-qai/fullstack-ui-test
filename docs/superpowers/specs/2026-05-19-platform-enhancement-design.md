@@ -41,8 +41,9 @@
 
 - 新增 `ReportGenerator` 模块：任务完成后自动生成报告
 - 报告内容：通过/失败统计、每步骤执行日志、设备信息、执行时间、用例名称
-- 报告格式：HTML（平台内查看，任务完成时自动生成）+ PDF（下载时按需生成，使用 `weasyprint` 转换）
-- 报告存储：`reports/{task_id}/report.html`（自动生成），PDF 按需生成后缓存在同目录
+- 报告格式：HTML（自包含，所有 CSS/图片等外部引用转 base64 内嵌，直接存数据库字段）+ PDF（下载时按需生成，使用 `weasyprint` 转换）
+- HTML 存储：完整 HTML 内容存入 Report 模型的 `content` 字段（Text 类型），查看时 API 直接返回字符串，无需文件系统依赖
+- PDF 存储：按需生成后缓存在 `reports/{task_id}/report.pdf`
 
 ### 1.3 报告数据模型
 
@@ -51,8 +52,8 @@ class Report(Base):
     __tablename__ = "reports"
     id = Column(String, primary_key=True, default=lambda: f"rpt_{uuid.uuid4().hex[:8]}")
     task_id = Column(String, ForeignKey("test_tasks.id"), nullable=False)
-    html_path = Column(String, nullable=False)
-    pdf_path = Column(String)
+    content = Column(Text, nullable=False)  # 自包含 HTML（CSS/图片转 base64 内嵌）
+    pdf_path = Column(String)               # 按需生成的 PDF 缓存路径
     created_at = Column(DateTime, default=utc_now)
 ```
 
@@ -60,9 +61,9 @@ class Report(Base):
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/tasks/{id}/report` | GET | 查看报告 HTML |
-| `/api/tasks/{id}/report/download?format=pdf|html` | GET | 下载报告文件 |
-| `/api/reports` | GET | 报告列表 |
+| `/api/tasks/{id}/report` | GET | 直接返回 HTML 字符串（前端渲染） |
+| `/api/tasks/{id}/report/download?format=pdf|html` | GET | 下载报告文件（PDF 按需生成，HTML 返回 content 字段） |
+| `/api/reports` | GET | 报告列表（不含 content，仅元数据） |
 
 ### 1.5 前端改动
 
@@ -219,7 +220,7 @@ def get_device_ip(serial):
 ## 文件结构总览
 
 ### 后端新增文件
-- `backend/models/report.py` — 报告模型
+- `backend/models/report.py` — 报告模型（content 字段存自包含 HTML）
 - `backend/schemas/report.py` — 报告 schema
 - `backend/api/reports.py` — 报告 API 路由
 - `backend/core/report_generator.py` — HTML/PDF 报告生成器

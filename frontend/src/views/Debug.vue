@@ -9,23 +9,13 @@
             <a-col :span="12">
               <a-space>
                 <span>状态:</span>
-                <a-tag :color="uiautodevStatus.running ? 'green' : 'red'">
-                  {{ uiautodevStatus.running ? '运行中' : '已停止' }}
-                </a-tag>
-                <span v-if="uiautodevStatus.running">端口: {{ uiautodevStatus.port }}</span>
+                <a-tag color="green">运行中</a-tag>
+                <span>云端服务: uiauto2.devsleep.com</span>
               </a-space>
             </a-col>
             <a-col :span="12" style="text-align: right">
               <a-space>
-                <a-button type="primary" :loading="starting" @click="startUiautodev" :disabled="uiautodevStatus.running">
-                  启动服务
-                </a-button>
-                <a-button danger @click="stopUiautodev" :disabled="!uiautodevStatus.running">
-                  停止服务
-                </a-button>
-                <a-button @click="openInNewTab" :disabled="!uiautodevStatus.running">
-                  新窗口打开
-                </a-button>
+                <a-button @click="openInNewTab">新窗口打开</a-button>
               </a-space>
             </a-col>
           </a-row>
@@ -96,7 +86,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { message } from 'ant-design-vue'
 import { ReloadOutlined, FullscreenOutlined } from '@ant-design/icons-vue'
 import { getDevices } from '../api'
 
@@ -109,8 +98,11 @@ const iframeKey = ref(0)
 const iframeHeight = ref(600)
 
 const currentIframeSrc = computed(() => {
-  if (currentUrl.value) return currentUrl.value
-  return '/uiautodev/'
+  if (currentUrl.value) {
+    // 将 /uiautodev/ 前缀替换为完整的云端 URL
+    return currentUrl.value.replace('/uiautodev/', 'https://uiauto2.devsleep.com/')
+  }
+  return 'https://uiauto2.devsleep.com/'
 })
 
 const fetchDevices = async () => {
@@ -146,7 +138,7 @@ const openInNewTab = () => {
   if (selectedDevice.value) {
     window.open(`https://uiauto2.devsleep.com/android/${selectedDevice.value}`, '_blank')
   } else {
-    window.open(baseUrl, '_blank')
+    window.open('https://uiauto2.devsleep.com', '_blank')
   }
 }
 
@@ -172,19 +164,12 @@ const onIframeLoad = () => {
 
 onMounted(() => {
   fetchDevices()
-  fetchUiautodevStatus()
   
   const updateHeight = () => {
     iframeHeight.value = window.innerHeight - 400
   }
   updateHeight()
   window.addEventListener('resize', updateHeight)
-})
-
-watch(() => uiautodevStatus.value.running, (newVal) => {
-  if (newVal && !currentUrl.value) {
-    reloadIframe('/uiautodev/')
-  }
 })
 </script>
 

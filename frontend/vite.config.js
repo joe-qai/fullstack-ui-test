@@ -37,6 +37,12 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
+      '/uiautodev': {
+        target: 'http://127.0.0.1:20243',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/uiautodev/, ''),
+        ws: true,
+      },
     },
   },
 })

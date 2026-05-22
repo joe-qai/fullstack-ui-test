@@ -45,11 +45,23 @@ class UiautodevManager:
 
     def is_running(self) -> bool:
         """Check if uiautodev server is running."""
-        try:
-            response = requests.get(f"{self.server_url}/", timeout=2)
-            return response.status_code == 200
-        except:
-            return False
+        health_paths = ["/", "/status", "/health", ""]
+        for path in health_paths:
+            try:
+                url = f"{self.server_url}{path}"
+                response = requests.get(url, timeout=3)
+                if response.status_code == 200:
+                    return True
+            except:
+                continue
+        for i in range(3):
+            try:
+                response = requests.get(f"{self.server_url}/", timeout=2)
+                if response.status_code == 200:
+                    return True
+            except:
+                time.sleep(1)
+        return False
 
     def get_status(self) -> Dict:
         """Get uiautodev server status."""

@@ -4,11 +4,11 @@ from datetime import datetime
 class APKPackageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
-    project_id: str
+    file_name: str
+    package_name: str
     version: str
     file_path: str
     file_size: int
-    package_name: str | None = None
     uploaded_at: datetime
     description: str | None = None
 

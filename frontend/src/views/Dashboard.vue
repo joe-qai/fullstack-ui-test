@@ -14,7 +14,13 @@
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="设备数" :value="stats.devices" />
+          <a-statistic title="设备数" :value="stats.devices">
+            <template #suffix>
+              <span style="font-size: 14px; color: #999">
+                USB {{ stats.devices_usb ?? 0 }} / WiFi {{ stats.devices_wifi ?? 0 }}
+              </span>
+            </template>
+          </a-statistic>
         </a-card>
       </a-col>
       <a-col :span="6">
@@ -54,7 +60,7 @@
 import { ref, onMounted } from 'vue'
 import { getStats, getDevices, getTasks } from '../api'
 
-const stats = ref({ projects: 0, cases: 0, devices: 0, tasks: 0 })
+const stats = ref({ projects: 0, cases: 0, devices: 0, devices_usb: 0, devices_wifi: 0, tasks: 0 })
 const recentTasks = ref([])
 const onlineDevices = ref([])
 const loading = ref(false)

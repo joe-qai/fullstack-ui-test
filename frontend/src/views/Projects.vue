@@ -16,8 +16,14 @@
       row-key="id"
       style="margin-top: 24px"
     >
+      <template #status="{ record }">
+        <a-tag :color="record.status === 'enabled' ? 'success' : 'warning'">
+          {{ record.status === 'enabled' ? '启用' : '禁用' }}
+        </a-tag>
+      </template>
       <template #action="{ record }">
         <a-button type="link" @click="viewProject(record.id)">查看</a-button>
+        <a-button type="link" @click="toggleStatus(record)">{{ record.status === 'enabled' ? '禁用' : '启用' }}</a-button>
         <a-button type="link" danger @click="onDeleteClick(record)">删除</a-button>
       </template>
     </a-table>
@@ -29,10 +35,10 @@
     >
       <a-form :model="form" layout="vertical">
         <a-form-item label="名称" required>
-          <a-input v-model:value="form.name" />
+          <a-input v-model:value="form.name" placeholder="请输入项目名称" />
         </a-form-item>
-        <a-form-item label="App ID">
-          <a-input v-model:value="form.app_id" />
+        <a-form-item label="描述">
+          <a-textarea v-model:value="form.description" placeholder="请输入项目描述" :rows="3" />
         </a-form-item>
         <a-form-item label="平台">
           <a-select v-model:value="form.platform">
@@ -61,18 +67,18 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { getProjects, createProject, deleteProject as deleteProjectApi, getProjectStats } from '../api'
+import { getProjects, createProject, deleteProject as deleteProjectApi, getProjectStats, updateProject } from '../api'
 
 const router = useRouter()
 const projects = ref([])
 const loading = ref(false)
 const showModal = ref(false)
-const form = ref({ name: '', app_id: '', platform: 'android' })
+const form = ref({ name: '', description: '', platform: 'android' })
 
 const columns = [
   { title: '项目名称', dataIndex: 'name', key: 'name' },
-  { title: 'App ID', dataIndex: 'app_id', key: 'app_id' },
   { title: '平台', dataIndex: 'platform', key: 'platform' },
+  { title: '状态', key: 'status', slots: { customRender: 'status' } },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
@@ -100,15 +106,27 @@ const handleCreate = async () => {
   try {
     await createProject(form.value)
     showModal.value = false
-    form.value = { name: '', app_id: '', platform: 'android' }
+    form.value = { name: '', description: '', platform: 'android' }
     fetchProjects()
+    message.success('项目创建成功')
   } catch (error) {
-    console.error('Failed to create project:', error)
+    message.error('创建失败: ' + (error.response?.data?.detail || error.message))
   }
 }
 
 const viewProject = (id) => {
   router.push(`/projects/${id}`)
+}
+
+const toggleStatus = async (record) => {
+  const newStatus = record.status === 'enabled' ? 'disabled' : 'enabled'
+  try {
+    await updateProject(record.id, { status: newStatus })
+    record.status = newStatus
+    message.success(`项目已${newStatus === 'enabled' ? '启用' : '禁用'}`)
+  } catch (error) {
+    message.error('操作失败: ' + (error.response?.data?.detail || error.message))
+  }
 }
 
 const onDeleteClick = async (record) => {
@@ -143,8 +161,9 @@ const handleDeleteConfirm = async () => {
     await deleteProjectApi(pendingDeleteId.value)
     showDeleteModal.value = false
     fetchProjects()
+    message.success('删除成功')
   } catch (error) {
-    console.error('Failed to delete project:', error)
+    message.error('删除失败: ' + (error.response?.data?.detail || error.message))
   }
 }
 

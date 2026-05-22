@@ -1,14 +1,8 @@
 <template>
   <div class="apk-management">
-    <a-page-header title="APK管理" sub-title="项目内APK版本管理">
-      <template #extra>
-        <a-select v-model:value="selectedProject" style="width: 200px" placeholder="选择项目" @change="fetchData">
-          <a-select-option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</a-select-option>
-        </a-select>
-      </template>
-    </a-page-header>
+    <a-page-header title="APK管理" sub-title="APK包版本管理" />
 
-    <a-table v-if="selectedProject" :columns="columns" :data-source="apks" :loading="loading" row-key="id" style="margin-top: 16px">
+    <a-table :columns="columns" :data-source="apks" :loading="loading" row-key="id" style="margin-top: 16px">
       <template #fileSize="{ record }">{{ formatSize(record.file_size) }}</template>
       <template #action="{ record }">
         <a-popconfirm title="确定删除此APK版本?" @confirm="handleDelete(record.id)">
@@ -16,9 +10,9 @@
         </a-popconfirm>
       </template>
     </a-table>
-    <a-empty v-else description="请先选择项目" style="margin-top: 48px" />
+    <a-empty v-if="!loading && apks.length === 0" description="暂无APK文件" style="margin-top: 48px" />
 
-    <a-button v-if="selectedProject" type="primary" @click="showUploadModal = true" style="margin-top: 16px">上传新APK</a-button>
+    <a-button type="primary" @click="showUploadModal = true" style="margin-top: 16px">上传新APK</a-button>
 
     <a-modal v-model:open="showUploadModal" title="上传APK" @ok="handleUpload" :confirmLoading="uploading">
       <a-form :model="uploadForm" layout="vertical">
@@ -28,9 +22,9 @@
           </a-upload>
         </a-form-item>
         <a-form-item label="版本号">
-          <a-input v-model:value="uploadForm.version" placeholder="自动从APK解析，也可手动填写" />
+          <a-input v-model:value="uploadForm.version" placeholder="请输入版本号" />
         </a-form-item>
-        <a-form-item label="版本备注">
+        <a-form-item label="备注">
           <a-input v-model:value="uploadForm.description" placeholder="可选" />
         </a-form-item>
       </a-form>
@@ -41,10 +35,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { getProjects, getApks, uploadApk, deleteApk } from '../api'
+import { getApks, uploadApk, deleteApk } from '../api'
 
-const projects = ref([])
-const selectedProject = ref(null)
 const apks = ref([])
 const loading = ref(false)
 const uploading = ref(false)
@@ -54,11 +46,12 @@ const apkFile = ref(null)
 const uploadForm = ref({ version: '', description: '' })
 
 const columns = [
-  { title: '版本', dataIndex: 'version', key: 'version' },
+  { title: '文件名', dataIndex: 'file_name', key: 'file_name' },
   { title: '包名', dataIndex: 'package_name', key: 'package_name' },
+  { title: '版本', dataIndex: 'version', key: 'version' },
   { title: '大小', key: 'file_size', slots: { customRender: 'fileSize' } },
-  { title: '上传时间', dataIndex: 'uploaded_at', key: 'uploaded_at' },
   { title: '备注', dataIndex: 'description', key: 'description' },
+  { title: '上传时间', dataIndex: 'uploaded_at', key: 'uploaded_at' },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
 
@@ -70,10 +63,9 @@ const formatSize = (bytes) => {
 }
 
 const fetchData = async () => {
-  if (!selectedProject.value) return
   loading.value = true
   try {
-    const res = await getApks(selectedProject.value)
+    const res = await getApks()
     apks.value = res.data
   } catch (error) {
     message.error('获取APK列表失败: ' + (error.response?.data?.detail || error.message))
@@ -98,7 +90,7 @@ const handleUpload = async () => {
   if (!apkFile.value) return
   uploading.value = true
   try {
-    await uploadApk(selectedProject.value, apkFile.value, uploadForm.value.version, uploadForm.value.description)
+    await uploadApk(apkFile.value, uploadForm.value.version, uploadForm.value.description)
     message.success('APK 上传成功')
     showUploadModal.value = false
     apkFile.value = null
@@ -114,25 +106,14 @@ const handleUpload = async () => {
 
 const handleDelete = async (apkId) => {
   try {
-    await deleteApk(selectedProject.value, apkId)
+    await deleteApk(apkId)
     fetchData()
   } catch (error) {
     console.error('Failed to delete APK:', error)
   }
 }
 
-onMounted(async () => {
-  try {
-    const res = await getProjects()
-    projects.value = res.data
-    if (projects.value.length > 0) {
-      selectedProject.value = projects.value[0].id
-      fetchData()
-    }
-  } catch (error) {
-    console.error('Failed to fetch projects:', error)
-  }
-})
+onMounted(fetchData)
 </script>
 
 <style scoped>

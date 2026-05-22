@@ -16,13 +16,27 @@ def ensure_directory():
 
 def validate_code(code: str):
     """Validate Python code syntax using ast.parse."""
+    if not code.strip():
+        return False, "代码不能为空"
+    
     try:
-        ast.parse(code)
+        tree = ast.parse(code)
+        
+        has_function = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                has_function = True
+                break
+        
+        if not has_function:
+            return False, "代码中需要包含至少一个函数定义"
+        
         return True, ""
     except SyntaxError as e:
-        return False, f"Syntax error at line {e.lineno}: {e.msg}"
+        line_info = f"第 {e.lineno} 行" if e.lineno else ""
+        return False, f"Python syntax error: {line_info}: {e.msg}"
     except Exception as e:
-        return False, str(e)
+        return False, f"代码验证失败: {str(e)}"
 
 
 def write_keyword_file(name: str, code: str):

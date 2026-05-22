@@ -31,18 +31,24 @@
           <a-select v-model:value="selectedDevice" placeholder="选择设备" style="width: 300px; margin-bottom: 16px" @change="handleDeviceChange">
             <a-select-option v-for="device in devices" :key="device.id" :value="device.serial">
               {{ device.name || device.serial }}
+              <a-tag v-if="device.serial?.includes(':')" color="blue" size="small">WiFi</a-tag>
+              <a-tag v-else color="green" size="small">USB</a-tag>
             </a-select-option>
           </a-select>
-          <div v-if="selectedDevice">
-            <a-alert v-if="iframeError" :message="iframeError" type="error" show-icon style="margin-bottom: 12px" />
-            <div v-if="!uiautodevStatus.running" class="iframe-container">
-              <a-alert message="uiautodev 未运行，请先启动" type="warning" />
-            </div>
-            <div v-else class="iframe-container">
-              <iframe :src="iframeUrl" width="100%" height="800" frameborder="0" @error="iframeError = 'iframe 加载失败'" />
-            </div>
+          <div v-if="!uiautodevStatus.running">
+            <a-alert message="uiautodev 未运行，请先启动" type="warning" />
           </div>
-          <a-empty v-else description="请选择设备开始调试" />
+          <div v-else-if="selectedDevice" style="text-align: center; padding: 48px 0">
+            <a-result status="info" title="设备调试页">
+              <template #extra>
+                <a-button type="primary" size="large" @click="openDevicePage">打开设备调试页</a-button>
+                <a-button size="large" @click="openRootPage">打开 uiautodev 主页</a-button>
+              </template>
+            </a-result>
+          </div>
+          <div v-else style="text-align: center; padding: 48px 0">
+            <a-button type="primary" size="large" @click="openRootPage">打开 uiautodev 主页</a-button>
+          </div>
         </a-card>
       </a-col>
     </a-row>
@@ -82,6 +88,15 @@ const startUiautodev = async () => {
   try {
     await axios.post('/api/debug/uiautodev/start')
     await fetchUiautodevStatus()
+    // 自动选择第一个 USB 设备
+    if (devices.value.length > 0 && !selectedDevice.value) {
+      const usbDevice = devices.value.find(d => !d.serial?.includes(':'))
+      if (usbDevice) {
+        await handleDeviceChange(usbDevice.serial)
+      } else {
+        await handleDeviceChange(devices.value[0].serial)
+      }
+    }
   } catch (error) {
     console.error('Failed to start uiautodev:', error)
   }
@@ -104,6 +119,14 @@ const handleDeviceChange = async (serial) => {
   } catch (error) {
     iframeError.value = '获取设备调试 URL 失败: ' + (error.response?.data?.detail || error.message)
   }
+}
+
+const openDevicePage = () => {
+  if (iframeUrl.value) window.open(iframeUrl.value, '_blank')
+}
+
+const openRootPage = () => {
+  window.open(uiautodevStatus.value.url, '_blank')
 }
 
 onMounted(() => {

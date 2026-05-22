@@ -2,22 +2,36 @@
   <div class="tasks">
     <a-page-header title="任务管理" sub-title="执行测试任务">
       <template #extra>
+        <a-button v-if="selectedRowKeys.length > 0" danger @click="handleBatchDelete" style="margin-right: 8px">
+          批量删除 ({{ selectedRowKeys.length }})
+        </a-button>
         <a-button type="primary" @click="openCreateModal">创建任务</a-button>
       </template>
     </a-page-header>
 
-    <a-table :columns="columns" :data-source="tasks" :loading="loading" row-key="id" style="margin-top: 16px">
+    <a-table :columns="columns" :data-source="tasks" :loading="loading" row-key="id" style="margin-top: 16px"
+      :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
+      :row-class-name="getRowClass">
       <template #contentName="{ record }">{{ getContentName(record) }}</template>
       <template #contentType="{ record }">
         <a-tag :color="record.case_id ? 'blue' : 'orange'">{{ record.case_id ? '用例' : '脚本' }}</a-tag>
       </template>
       <template #apkVersion="{ record }">{{ getApkLabel(record.apk_id) }}</template>
       <template #status="{ record }">
-        <a-tag :color="getStatusColor(record.status)">{{ record.status }}</a-tag>
+        <a-tag :color="getStatusColor(record.status)">{{ getStatusText(record.status) }}</a-tag>
+      </template>
+      <template #failureReason="{ record }">
+        <span :style="{ color: record.status === 'completed' ? '#52c41a' : '#ff4d4f' }">
+          {{ getFailureReason(record) }}
+        </span>
       </template>
       <template #action="{ record }">
-        <a-button v-if="record.status === 'pending'" type="link" @click="handleExecute(record.id)">执行</a-button>
-        <span v-else style="color: #999">{{ record.status }}</span>
+        <a-popconfirm v-if="record.status === 'running'" title="确定中止?" @confirm="handleAbort(record.id)">
+          <a-button type="link" danger>中止</a-button>
+        </a-popconfirm>
+        <a-popconfirm v-if="canDelete(record)" title="确定删除?" @confirm="handleDelete(record.id)">
+          <a-button type="link" danger>删除</a-button>
+        </a-popconfirm>
       </template>
     </a-table>
 
@@ -28,7 +42,7 @@
             <a-select-option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item label="测试内容" required>
+        <a-form-item label="测试用例" required>
           <a-select v-model:value="taskForm.content_id" placeholder="选择用例或脚本">
             <a-select-opt-group label="用例">
               <a-select-option v-for="c in projectCases" :key="`case-${c.id}`" :value="`case-${c.id}`">{{ c.name }}</a-select-option>
@@ -38,18 +52,30 @@
             </a-select-opt-group>
           </a-select>
         </a-form-item>
-        <a-form-item label="APK版本">
-          <a-select v-model:value="taskForm.apk_id" placeholder="选择APK版本" allowClear>
+        <a-form-item label="APK包">
+          <a-select v-model:value="taskForm.apk_id" placeholder="选择APK包" allowClear>
             <a-select-option :value="null">不安装APK</a-select-option>
             <a-select-option v-for="apk in projectApks" :key="apk.id" :value="apk.id">
-              {{ apk.version }} ({{ apk.package_name || '未知包名' }})
+              {{ apk.file_name || apk.name }} {{ apk.version }}
             </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="目标设备" required>
-          <a-checkbox-group v-model:value="taskForm.device_ids">
+          <template v-if="devicesLoading">
+            <a-spin size="small" /> 加载设备中...
+          </template>
+          <template v-else-if="onlineDevices.length === 0">
+            <a-empty description="暂无在线设备，请先连接设备" />
+          </template>
+          <a-checkbox-group v-else v-model:value="taskForm.device_ids">
             <a-checkbox v-for="d in onlineDevices" :key="d.id" :value="d.id">
-              {{ d.name || d.serial }} <a-tag :color="d.status === 'online' ? 'green' : 'red'" size="small">{{ d.status }}</a-tag>
+              {{ d.name || d.serial }} 
+              <a-tag :color="d.status === 'online' ? 'green' : 'red'" size="small">
+                {{ d.status === 'online' ? '在线' : '离线' }}
+              </a-tag>
+              <span v-if="d.serial?.includes(':')" class="ml-1">
+                <a-tag color="blue" size="small">TCP/IP</a-tag>
+              </span>
             </a-checkbox>
           </a-checkbox-group>
         </a-form-item>
@@ -60,10 +86,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import {
-  getProjects, getCases, getScripts, getApks, getDevices, getTasks,
+  getProjects, getAllCases, getAllScripts, getApks, getDevices, getTasks,
   createTask, executeTask as executeTaskApi,
+  deleteTask as deleteTaskApi, batchDeleteTasks as batchDeleteTasksApi,
 } from '../api'
+import axios from 'axios'
 
 const tasks = ref([])
 const projects = ref([])
@@ -73,7 +102,9 @@ const projectApks = ref([])
 const devices = ref([])
 const loading = ref(false)
 const creating = ref(false)
+const devicesLoading = ref(false)
 const showCreateModal = ref(false)
+const selectedRowKeys = ref([])
 
 const taskForm = ref({
   projectId: null,
@@ -88,16 +119,31 @@ const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 120 },
   { title: '测试内容', key: 'contentName', slots: { customRender: 'contentName' } },
   { title: '类型', key: 'contentType', slots: { customRender: 'contentType' } },
-  { title: 'APK版本', key: 'apkVersion', slots: { customRender: 'apkVersion' } },
+  { title: 'APK包', key: 'apkVersion', slots: { customRender: 'apkVersion' } },
   { title: '状态', dataIndex: 'status', key: 'status', slots: { customRender: 'status' } },
+  { title: '失败原因', key: 'failureReason', slots: { customRender: 'failureReason' }, ellipsis: true, width: 200 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
 
 const getStatusColor = (status) => {
-  const colors = { pending: 'default', running: 'blue', completed: 'green', failed: 'red', skipped: 'orange' }
+  const colors = { pending: 'default', running: 'blue', completed: 'green', failed: 'red', cancelled: 'orange' }
   return colors[status] || 'default'
 }
+
+const getStatusText = (status) => {
+  const texts = { pending: '待执行', running: '执行中', completed: '已完成', failed: '失败', cancelled: '已取消' }
+  return texts[status] || status
+}
+
+const canDelete = (record) => ['completed', 'cancelled', 'failed'].includes(record.status)
+
+const getRowClass = (record) => {
+  if (record.status === 'running') return 'row-running'
+  return ''
+}
+
+const onSelectChange = (keys) => { selectedRowKeys.value = keys }
 
 const getContentName = (record) => {
   if (record.case_id) {
@@ -114,14 +160,40 @@ const getContentName = (record) => {
 const getApkLabel = (apkId) => {
   if (!apkId) return '不安装'
   const apk = projectApks.value.find(a => a.id === apkId)
-  return apk ? `${apk.version}` : apkId
+  return apk ? `${apk.file_name || apk.name} ${apk.version}` : apkId
+}
+
+const getFailureReason = (record) => {
+  if (record.status === 'completed') {
+    return 'No reason'
+  }
+  // 查找第一个失败的结果的错误信息
+  if (record.results && record.results.length > 0) {
+    const failedResult = record.results.find(r => r.status === 'failed' && r.error_message)
+    if (failedResult) {
+      return failedResult.error_message
+    }
+  }
+  return '执行失败'
 }
 
 const fetchTasks = async () => {
   loading.value = true
   try {
     const res = await getTasks()
-    tasks.value = res.data
+    // 对于每个任务，获取详细的结果，包含错误信息
+    const tasksWithDetails = await Promise.all(
+      res.data.map(async (task) => {
+        try {
+          const reportRes = await axios.get(`/api/tasks/${task.id}/reports`)
+          return { ...task, results: reportRes.data.results || [] }
+        } catch {
+          return { ...task, results: [] }
+        }
+      })
+    )
+    tasks.value = tasksWithDetails
+    selectedRowKeys.value = []
   } catch (error) {
     console.error('Failed to fetch tasks:', error)
   } finally {
@@ -132,35 +204,37 @@ const fetchTasks = async () => {
 const openCreateModal = async () => {
   taskForm.value = { projectId: null, content_id: null, apk_id: null, device_ids: [] }
   showCreateModal.value = true
+  devicesLoading.value = true
+  projectScripts.value = []
+  projectCases.value = []
   try {
-    const [projRes, devRes] = await Promise.all([getProjects(), getDevices()])
+    const [projRes, devRes, apkRes, scriptsRes, casesRes] = await Promise.all([
+      getProjects(), getDevices(), getApks(), getAllScripts(), getAllCases(),
+    ])
     projects.value = projRes.data
     devices.value = devRes.data
+    projectApks.value = apkRes.data
+    projectScripts.value = scriptsRes.data
+    projectCases.value = casesRes.data
   } catch (error) {
     console.error('Failed to load modal data:', error)
+    message.error('加载数据失败: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    devicesLoading.value = false
   }
 }
 
 const onProjectChange = async (projectId) => {
   taskForm.value.content_id = null
-  taskForm.value.apk_id = null
-  try {
-    const [caseRes, scriptRes, apkRes] = await Promise.all([
-      getCases(projectId),
-      getScripts(projectId),
-      getApks(projectId),
-    ])
-    projectCases.value = caseRes.data
-    projectScripts.value = scriptRes.data
-    projectApks.value = apkRes.data
-  } catch (error) {
-    console.error('Failed to load project data:', error)
-  }
 }
 
 const handleCreateTask = async () => {
-  if (!taskForm.value.content_id || taskForm.value.device_ids.length === 0) {
-    alert('请选择测试内容和至少一个设备')
+  if (!taskForm.value.content_id) {
+    message.warning('请选择测试内容')
+    return
+  }
+  if (taskForm.value.device_ids.length === 0) {
+    message.warning('请选择至少一个目标设备')
     return
   }
   creating.value = true
@@ -174,23 +248,48 @@ const handleCreateTask = async () => {
     } else if (taskForm.value.content_id.startsWith('script-')) {
       payload.script_id = taskForm.value.content_id.replace('script-', '')
     }
-    await createTask(payload)
+    const res = await createTask(payload)
     showCreateModal.value = false
+    message.success('任务创建成功，正在执行...')
+    const execRes = await executeTaskApi(res.data.id)
     fetchTasks()
+    
+    // 检测是否有 ModuleNotFoundError 的友好提示
+    if (execRes.data && execRes.data.results) {
+      for (const deviceId in execRes.data.results) {
+        const result = execRes.data.results[deviceId]
+        if (result.error && result.error.endsWith('未安装！')) {
+          message.error(result.error)
+          break
+        }
+      }
+    }
   } catch (error) {
     console.error('Failed to create task:', error)
-    alert('创建失败: ' + (error.response?.data?.detail || error.message))
+    message.error('创建失败: ' + (error.response?.data?.detail || error.message))
   } finally {
     creating.value = false
   }
 }
 
-const handleExecute = async (id) => {
+const handleDelete = async (id) => {
   try {
-    await executeTaskApi(id)
+    await deleteTaskApi(id)
     fetchTasks()
   } catch (error) {
-    console.error('Failed to execute task:', error)
+    message.error('删除失败: ' + (error.response?.data?.detail || error.message))
+  }
+}
+
+const handleBatchDelete = async () => {
+  const ids = selectedRowKeys.value
+  if (ids.length === 0) return
+  try {
+    const res = await batchDeleteTasksApi(ids)
+    message.success(`成功删除 ${res.data.count} 个任务`)
+    fetchTasks()
+  } catch (error) {
+    message.error('批量删除失败: ' + (error.response?.data?.detail || error.message))
   }
 }
 
@@ -199,4 +298,5 @@ onMounted(fetchTasks)
 
 <style scoped>
 .tasks { padding: 24px; }
+.ml-1 { margin-left: 4px; }
 </style>

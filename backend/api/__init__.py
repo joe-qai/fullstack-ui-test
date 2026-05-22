@@ -9,15 +9,17 @@ from api.tasks import router as tasks_router
 from api.debug import router as debug_router
 from api.apks import router as apks_router
 from api.stats import router as stats_router
+from api.reports import router as reports_router
 
 api_router = APIRouter()
+api_router.include_router(scripts_router)
+api_router.include_router(cases_router)
 api_router.include_router(projects_router)
 api_router.include_router(pages_router)
 api_router.include_router(keywords_router)
-api_router.include_router(cases_router)
-api_router.include_router(scripts_router)
 api_router.include_router(devices_router)
 api_router.include_router(tasks_router)
 api_router.include_router(debug_router)
 api_router.include_router(apks_router)
 api_router.include_router(stats_router)
+api_router.include_router(reports_router)

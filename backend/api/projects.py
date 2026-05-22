@@ -16,7 +16,12 @@ def list_projects(db: Session = Depends(get_db)):
 
 @router.post("", response_model=ProjectResponse)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
-    db_project = Project(name=project.name, app_id=project.app_id, platform=project.platform)
+    db_project = Project(
+        name=project.name,
+        description=project.description,
+        status="enabled",
+        platform=project.platform
+    )
     db.add(db_project)
     db.commit()
     db.refresh(db_project)

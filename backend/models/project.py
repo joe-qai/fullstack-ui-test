@@ -12,6 +12,8 @@ class Project(Base):
     __tablename__ = "projects"
     id = Column(String, primary_key=True, default=lambda: f"proj_{uuid.uuid4().hex[:8]}")
     name = Column(String, nullable=False)
-    app_id = Column(String)
+    description = Column(String)
+    status = Column(String, default="enabled")
     platform = Column(String, default="android")
+    app_id = Column(String)
     created_at = Column(DateTime, default=utc_now)

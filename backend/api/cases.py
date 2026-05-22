@@ -1,17 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from typing import List
 import json
 from db.database import get_db
 from models.test_case import TestCase
 from models.case_step import CaseStep
 from schemas.test_case import TestCaseCreate, TestCaseUpdate, TestCaseResponse, CaseStepCreate
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/projects", tags=["cases"])
 
+class BatchDeleteCasesRequest(BaseModel):
+    ids: List[str]
+
+@router.get("/cases", response_model=List[TestCaseResponse])
+def list_all_cases(db: Session = Depends(get_db)):
+    return db.query(TestCase).order_by(desc(TestCase.created_at)).all()
+
 @router.get("/{project_id}/cases", response_model=List[TestCaseResponse])
 def list_cases(project_id: str, db: Session = Depends(get_db)):
-    return db.query(TestCase).filter(TestCase.project_id == project_id).all()
+    return db.query(TestCase).filter(TestCase.project_id == project_id).order_by(desc(TestCase.created_at)).all()
 
 @router.post("/{project_id}/cases", response_model=TestCaseResponse)
 def create_case(project_id: str, case: TestCaseCreate, db: Session = Depends(get_db)):
@@ -112,3 +121,11 @@ def delete_step(project_id: str, case_id: str, step_id: str, db: Session = Depen
     db.delete(step)
     db.commit()
     return {"message": "Step deleted"}
+
+@router.post("/{project_id}/cases/batch-delete")
+def batch_delete_cases(project_id: str, req: BatchDeleteCasesRequest, db: Session = Depends(get_db)):
+    cases = db.query(TestCase).filter(TestCase.id.in_(req.ids), TestCase.project_id == project_id).all()
+    for c in cases:
+        db.delete(c)
+    db.commit()
+    return {"message": f"Deleted {len(cases)} cases", "count": len(cases)}

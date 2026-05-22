@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship
 from models.base import Base
 
@@ -15,4 +15,5 @@ class TaskResult(Base):
     end_time = Column(DateTime)
     log_path = Column(String)
     report_path = Column(String)
+    error_message = Column(Text)  # 新增字段：失败原因
     test_task = relationship("TestTask", back_populates="results")

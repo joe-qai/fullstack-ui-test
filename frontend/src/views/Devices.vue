@@ -8,7 +8,7 @@
 
     <a-table :columns="columns" :data-source="devices" :loading="loading" row-key="id" style="margin-top: 16px">
       <template #status="{ record }">
-        <a-tag :color="record.status === 'online' ? 'green' : 'red'">{{ record.status }}</a-tag>
+        <a-tag :color="record.status === 'online' ? 'green' : 'red'">{{ record.status === 'online' ? '在线' : '离线' }}</a-tag>
       </template>
       <template #connType="{ record }">
         <a-tag :color="isTcpipDevice(record.serial) ? 'blue' : 'default'">
@@ -16,8 +16,15 @@
         </a-tag>
       </template>
       <template #action="{ record }">
-        <a-button v-if="isTcpipDevice(record.serial)" type="link" danger @click="handleDisconnect(record)">断开</a-button>
-        <a-button v-else type="link" @click="handleConnect(record)">连接</a-button>
+        <template v-if="isTcpipDevice(record.serial)">
+          <a-button type="link" danger @click="handleDisconnect(record)">断开</a-button>
+        </template>
+        <template v-else-if="record.status === 'online'">
+          <a-button type="link" @click="handleConnect(record)">连接</a-button>
+        </template>
+        <template v-else>
+          <a-button type="link" disabled>离线</a-button>
+        </template>
       </template>
     </a-table>
   </div>

@@ -4,6 +4,8 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+const apiUrl = process.env.VITE_API_URL || 'http://localhost:9000'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -16,22 +18,22 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:9000',
+        target: apiUrl,
         changeOrigin: true,
       },
       '/health': {
-        target: 'http://localhost:9000',
+        target: apiUrl,
         changeOrigin: true,
       },
       '/docs': {
-        target: 'http://localhost:9000',
+        target: apiUrl,
         changeOrigin: true,
       },
       '/ws': {
-        target: 'http://localhost:9000',
+        target: apiUrl,
         changeOrigin: true,
         ws: true,
       },

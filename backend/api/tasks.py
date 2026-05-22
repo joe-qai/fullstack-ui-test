@@ -2,18 +2,20 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from typing import List
+from pydantic import BaseModel
 from db.database import get_db
 from models.test_task import TestTask
 from models.task_result import TaskResult
 from schemas.test_task import TestTaskCreate, TestTaskResponse, TaskResultResponse
 from core.task_dispatcher import TaskDispatcher
 from websocket.log_stream import log_stream_manager
+from sqlalchemy import desc
 
 router = APIRouter(prefix="/api", tags=["tasks"])
 
 @router.get("/tasks", response_model=List[TestTaskResponse])
 def list_tasks(db: Session = Depends(get_db)):
-    tasks = db.query(TestTask).all()
+    tasks = db.query(TestTask).order_by(desc(TestTask.created_at)).all()
     # Convert device_ids from JSON string to list
     for task in tasks:
         if isinstance(task.device_ids, str):
@@ -87,11 +89,48 @@ def get_task_reports(task_id: str, db: Session = Depends(get_db)):
                 "end_time": r.end_time.isoformat() if r.end_time else None,
                 "log_path": r.log_path,
                 "report_path": r.report_path,
+                "error_message": r.error_message,  # 新增：返回错误信息
             }
             for r in results
         ]
     }
 
+
+@router.post("/tasks/{task_id}/abort")
+def abort_task(task_id: str, db: Session = Depends(get_db)):
+    task = db.query(TestTask).filter(TestTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.status != "running":
+        raise HTTPException(status_code=400, detail="Task is not running")
+    task_dispatcher.cancel_task(task_id, db)
+    db.refresh(task)
+    return {"task_id": task_id, "status": task.status}
+
+class BatchDeleteTasksRequest(BaseModel):
+    ids: List[str]
+
+@router.delete("/tasks/{task_id}")
+def delete_task(task_id: str, db: Session = Depends(get_db)):
+    task = db.query(TestTask).filter(TestTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.status not in ("completed", "cancelled", "failed"):
+        raise HTTPException(status_code=400, detail="Only completed, cancelled, or failed tasks can be deleted")
+    db.delete(task)
+    db.commit()
+    return {"message": "Task deleted"}
+
+@router.post("/tasks/batch-delete")
+def batch_delete_tasks(req: BatchDeleteTasksRequest, db: Session = Depends(get_db)):
+    tasks = db.query(TestTask).filter(TestTask.id.in_(req.ids)).all()
+    deletable = [t for t in tasks if t.status in ("completed", "cancelled", "failed")]
+    if len(deletable) != len(tasks):
+        raise HTTPException(status_code=400, detail="Only completed, cancelled, or failed tasks can be deleted")
+    for t in deletable:
+        db.delete(t)
+    db.commit()
+    return {"message": f"Deleted {len(deletable)} tasks", "count": len(deletable)}
 
 @router.websocket("/ws/tasks/{task_id}/logs")
 async def websocket_task_logs(websocket: WebSocket, task_id: str):

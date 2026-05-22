@@ -8,6 +8,7 @@ class TaskResultBase(BaseModel):
     end_time: datetime | None = None
     log_path: str | None = None
     report_path: str | None = None
+    error_message: str | None = None  # 新增字段：失败原因
 
 class TaskResultResponse(TaskResultBase):
     model_config = ConfigDict(from_attributes=True)

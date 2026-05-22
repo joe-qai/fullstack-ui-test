@@ -85,8 +85,24 @@ def disconnect_device(req: DisconnectRequest):
     return result
 
 @router.post("/devices/{serial}/connect")
-def connect_device_one_click(serial: str):
+def connect_device_one_click(serial: str, db: Session = Depends(get_db)):
     """一键连接 USB 设备：先 adb tcpip 开放端口，再 adb connect。"""
+    
+    # 检查是否已通过 TCP/IP 连接
+    tcpip_devices = db.query(Device).filter(
+        Device.serial.like(f"%:{serial.split(':')[0]}") |
+        Device.serial.like(f"{serial.split(':')[0]}:%")
+    ).all()
+    
+    for device in tcpip_devices:
+        if device.status == "online":
+            raise HTTPException(status_code=400, detail=f"设备已通过 TCP/IP 连接: {device.serial}")
+    
+    # 检查当前设备状态
+    current_device = db.query(Device).filter(Device.serial == serial).first()
+    if current_device and current_device.status != "online":
+        raise HTTPException(status_code=400, detail="设备当前离线，无法进行 TCP/IP 连接")
+
     # 1. 切换到 tcpip 模式
     tcpip_result = DeviceScanner.tcpip_device(serial, 5555)
     if not tcpip_result["success"]:
@@ -123,8 +139,6 @@ def connect_device_one_click(serial: str):
         raise HTTPException(status_code=400, detail=connect_result["message"])
 
     # 4. 同步设备列表
-    db = SessionLocal()
     DeviceScanner.sync_devices(db)
-    db.close()
 
     return {"success": True, "message": f"已连接 {ip}:5555", "serial": f"{ip}:5555"}

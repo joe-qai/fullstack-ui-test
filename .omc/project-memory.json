@@ -1,0 +1,152 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1779327658764,
+  "projectRoot": "C:\\pythonworkspace\\MultiUiAutoTest",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "scripts"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "backend": {
+      "path": "backend",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1779327658541,
+      "keyFiles": [
+        "config.py",
+        "main.py",
+        "requirements.txt"
+      ]
+    },
+    "data": {
+      "path": "data",
+      "purpose": "Data files",
+      "fileCount": 1,
+      "lastAccessed": 1779327658543,
+      "keyFiles": [
+        "autotest.db"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1779327658544,
+      "keyFiles": [
+        "issues.md"
+      ]
+    },
+    "frontend": {
+      "path": "frontend",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1779327658584,
+      "keyFiles": [
+        "index.html",
+        "jsconfig.json",
+        "package-lock.json",
+        "package.json",
+        "README.md"
+      ]
+    },
+    "reports": {
+      "path": "reports",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1779327658590,
+      "keyFiles": []
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 0,
+      "lastAccessed": 1779327658591,
+      "keyFiles": []
+    },
+    "backend\\api": {
+      "path": "backend\\api",
+      "purpose": "API routes",
+      "fileCount": 13,
+      "lastAccessed": 1779327658634,
+      "keyFiles": [
+        "apks.py",
+        "cases.py",
+        "debug.py"
+      ]
+    },
+    "backend\\data": {
+      "path": "backend\\data",
+      "purpose": "Data files",
+      "fileCount": 2,
+      "lastAccessed": 1779327658653,
+      "keyFiles": [
+        "integration_test.db",
+        "test.db"
+      ]
+    },
+    "backend\\models": {
+      "path": "backend\\models",
+      "purpose": "Data models",
+      "fileCount": 14,
+      "lastAccessed": 1779327658656,
+      "keyFiles": [
+        "apk_package.py",
+        "base.py",
+        "case_step.py"
+      ]
+    },
+    "frontend\\dist": {
+      "path": "frontend\\dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 2,
+      "lastAccessed": 1779327658666,
+      "keyFiles": [
+        "favicon.ico",
+        "index.html"
+      ]
+    },
+    "frontend\\node_modules": {
+      "path": "frontend\\node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1779327658705,
+      "keyFiles": []
+    },
+    "frontend\\public": {
+      "path": "frontend\\public",
+      "purpose": "Public files",
+      "fileCount": 1,
+      "lastAccessed": 1779327658717,
+      "keyFiles": [
+        "favicon.ico"
+      ]
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}

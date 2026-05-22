@@ -16,8 +16,11 @@ class UiautodevManager:
     def start(self) -> bool:
         """Start uiautodev server."""
         try:
+            import sys
+            cmd = ["uiauto.dev.exe" if sys.platform == "win32" else "uiauto.dev",
+                   "server", "--no-browser", "--port", str(self.port)]
             self.process = subprocess.Popen(
-                ["uiauto.dev", "server", "--no-browser", "--port", str(self.port)],
+                cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )

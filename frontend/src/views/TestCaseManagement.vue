@@ -1,16 +1,20 @@
 <template>
   <div class="case-management">
-    <a-page-header title="测试用例" sub-title="关键字编排 & 用例管理">
+    <a-page-header title="用例管理" sub-title="关键字编排 & 用例管理">
       <template #extra>
-        <a-select v-model:value="selectedProject" style="width: 200px" placeholder="选择项目" @change="fetchData">
+        <a-select v-model:value="selectedProject" style="width: 200px; margin-right: 12px" placeholder="选择项目" @change="fetchData">
           <a-select-option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</a-select-option>
         </a-select>
+        <a-button v-if="selectedRowKeys.length > 0" danger @click="handleBatchDelete">
+          批量删除 ({{ selectedRowKeys.length }})
+        </a-button>
       </template>
     </a-page-header>
 
     <!-- 列表模式 -->
     <div v-if="!editingCase">
-      <a-table v-if="selectedProject" :columns="caseColumns" :data-source="cases" :loading="loading" row-key="id" style="margin-top: 16px">
+      <a-table v-if="selectedProject" :columns="caseColumns" :data-source="cases" :loading="loading" row-key="id" style="margin-top: 16px"
+        :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }">
         <template #stepCount="{ record }">{{ record.steps?.length || 0 }}</template>
         <template #dependsOn="{ record }">{{ getDependsName(record.depends_on) }}</template>
         <template #action="{ record }">
@@ -21,7 +25,6 @@
         </template>
       </a-table>
       <a-empty v-else description="请先选择项目" style="margin-top: 48px" />
-
       <a-button v-if="selectedProject" type="primary" @click="startNewCase" style="margin-top: 16px">
         <PlusOutlined /> 创建用例
       </a-button>
@@ -59,11 +62,6 @@
             <a-form-item label="用例名称" required>
               <a-input v-model:value="caseForm.name" placeholder="输入用例名称" />
             </a-form-item>
-            <a-form-item label="类型">
-              <a-select v-model:value="caseForm.type" disabled>
-                <a-select-option value="keyword">关键字驱动</a-select-option>
-              </a-select>
-            </a-form-item>
             <a-form-item label="描述">
               <a-input v-model:value="caseForm.description" placeholder="用例描述" />
             </a-form-item>
@@ -86,16 +84,21 @@
                   </a-select>
                 </a-col>
                 <a-col :span="6">
-                  <a-select v-model:value="step.po_element_id" placeholder="选择元素(可选)" style="width: 100%" allowClear>
-                    <a-select-opt-group v-for="po in pageObjects" :key="po.id" :label="po.name">
-                      <a-select-option v-for="el in po.elements || []" :key="el.id" :value="el.id">{{ el.name }}</a-select-option>
-                    </a-select-opt-group>
-                  </a-select>
-                </a-col>
+          <a-select v-model:value="step.po_element_id" placeholder="选择对象(可选)" style="width: 100%" allowClear>
+            <a-select-opt-group v-for="po in pageObjects" :key="po.id" :label="po.name">
+              <a-select-option v-for="el in po.elements || []" :key="el.id" :value="el.id">{{ el.name }}</a-select-option>
+            </a-select-opt-group>
+          </a-select>
+        </a-col>
                 <a-col :span="8">
                   <div v-if="step.paramFields.length > 0" class="param-inputs">
                     <div v-for="pf in step.paramFields" :key="pf" class="param-field">
-                      <a-input v-model:value="step.params[pf]" :placeholder="pf" size="small" />
+                      <a-select v-if="pf === 'package'" v-model:value="step.params[pf]" :placeholder="'选择APK获取包名'" size="small" style="width: 100%" allowClear @change="(val) => { if (!val) step.params[pf] = '' }">
+                        <a-select-option v-for="apk in apks" :key="apk.id" :value="apk.package_name || apk.name">
+                          {{ apk.file_name || apk.name }} {{ apk.version }} ({{ apk.package_name || '无包名' }})
+                        </a-select-option>
+                      </a-select>
+                      <a-input v-else v-model:value="step.params[pf]" :placeholder="pf" size="small" />
                     </div>
                   </div>
                   <span v-else style="color: #999; font-size: 12px">无参数</span>
@@ -127,9 +130,10 @@ import { ref, computed, onMounted } from 'vue'
 import {
   PlusOutlined, ArrowUpOutlined, ArrowDownOutlined, DeleteOutlined,
 } from '@ant-design/icons-vue'
+import { message } from 'ant-design-vue'
 import {
   getProjects, getCases, createCase, updateCase, deleteCase,
-  getKeywords, getKeywordCategories, getPages,
+  getKeywords, getKeywordCategories, getPages, getApks, batchDeleteCases,
 } from '../api'
 
 const projects = ref([])
@@ -137,6 +141,7 @@ const selectedProject = ref(null)
 const cases = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const selectedRowKeys = ref([])
 
 // 编排模式状态
 const editingCase = ref(false)
@@ -155,17 +160,30 @@ const activeKwCategories = ref([])
 // PO + 元素数据（用于编排选元素）
 const pageObjects = ref([])
 
+const apks = ref([])
+
+const getApkPackageName = (apkId) => {
+  const apk = apks.value.find(a => a.id === apkId)
+  return apk ? (apk.package_name || apk.name) : ''
+}
+
 const caseColumns = [
   { title: '用例名称', dataIndex: 'name', key: 'name' },
-  { title: '类型', dataIndex: 'type', key: 'type' },
-  { title: '步骤数', key: 'stepCount', slots: { customRender: 'stepCount' } },
   { title: '前置用例', key: 'dependsOn', slots: { customRender: 'dependsOn' } },
+  { title: '步骤数', key: 'stepCount', slots: { customRender: 'stepCount' } },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
+
+const onSelectChange = (keys) => { selectedRowKeys.value = keys }
 
 const availableDepends = computed(() => {
   return cases.value.filter(c => c.id !== editingCaseId.value)
 })
+
+const getProjectName = (projectId) => {
+  const p = projects.value.find(p => p.id === projectId)
+  return p ? p.name : projectId
+}
 
 const filteredKeywordsByCat = (cat) => {
   const kws = allKeywords.value.filter(kw => kw.category === cat)
@@ -193,17 +211,31 @@ const fetchData = async () => {
   if (!selectedProject.value) return
   loading.value = true
   try {
-    const [caseRes, kwRes, catRes, pageRes] = await Promise.all([
+    const [caseRes, kwRes, catRes, pageRes, apkRes] = await Promise.all([
       getCases(selectedProject.value),
       getKeywords(),
       getKeywordCategories(),
       getPages(selectedProject.value),
+      getApks(),
     ])
     cases.value = caseRes.data
     allKeywords.value = kwRes.data
-    kwCategories.value = catRes.data.map(c => c.category)
+    
+    // 按 basic、platform、assertion 排序
+    const priorityOrder = ['basic', 'platform', 'assertion']
+    kwCategories.value = catRes.data
+      .map(c => c.category)
+      .sort((a, b) => {
+        const idxA = priorityOrder.indexOf(a)
+        const idxB = priorityOrder.indexOf(b)
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB
+        if (idxA !== -1) return -1
+        if (idxB !== -1) return 1
+        return a.localeCompare(b)
+      })
     pageObjects.value = pageRes.data
-    activeKwCategories.value = catRes.data.map(c => c.category)
+    apks.value = apkRes.data
+    activeKwCategories.value = [...kwCategories.value]
   } catch (error) {
     console.error('Failed to fetch data:', error)
   } finally {
@@ -344,6 +376,19 @@ const handleDeleteCase = async (caseId) => {
     fetchData()
   } catch (error) {
     console.error('Failed to delete case:', error)
+  }
+}
+
+const handleBatchDelete = async () => {
+  const ids = selectedRowKeys.value
+  if (ids.length === 0) return
+  try {
+    const res = await batchDeleteCases(selectedProject.value, ids)
+    message.success(`成功删除 ${res.data.count} 个用例`)
+    selectedRowKeys.value = []
+    fetchData()
+  } catch (error) {
+    message.error('批量删除失败: ' + (error.response?.data?.detail || error.message))
   }
 }
 

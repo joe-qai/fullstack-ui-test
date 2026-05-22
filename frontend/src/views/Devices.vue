@@ -17,7 +17,12 @@
       </template>
       <template #action="{ record }">
         <template v-if="isTcpipDevice(record.serial)">
-          <a-button type="link" danger @click="handleDisconnect(record)">断开</a-button>
+          <template v-if="record.status === 'online'">
+            <a-button type="link" danger @click="handleDisconnect(record)">断开</a-button>
+          </template>
+          <template v-else>
+            <a-button type="link" @click="handleReconnect(record)">重连</a-button>
+          </template>
         </template>
         <template v-else-if="record.status === 'online'">
           <a-button type="link" @click="handleConnect(record)">连接</a-button>
@@ -33,7 +38,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { getDevices, scanDevices, disconnectDevice, connectDeviceOneClick } from '../api'
+import { getDevices, scanDevices, disconnectDevice, connectDevice, connectDeviceOneClick } from '../api'
 
 const devices = ref([])
 const loading = ref(false)
@@ -94,6 +99,19 @@ const handleDisconnect = async (device) => {
     setTimeout(() => fetchDevices(), 1000)
   } catch (error) {
     message.error('断开连接失败: ' + (error.response?.data?.detail || error.message))
+  }
+}
+
+const handleReconnect = async (device) => {
+  try {
+    const parts = device.serial.split(':')
+    const ip = parts[0]
+    const port = parseInt(parts[1]) || 5555
+    const res = await connectDevice(ip, port)
+    message.success(res.data.message)
+    setTimeout(() => fetchDevices(), 2000)
+  } catch (error) {
+    message.error('重连失败: ' + (error.response?.data?.detail || error.message))
   }
 }
 

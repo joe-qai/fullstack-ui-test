@@ -18,13 +18,12 @@ class UiautodevManager:
         try:
             import sys
             cmd = ["uiauto.dev.exe" if sys.platform == "win32" else "uiauto.dev",
-                   "server", "--no-browser", "--port", str(self.port)]
+                   "server", "--no-browser", "--host", "127.0.0.1", "--port", str(self.port)]
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
-            # Wait for server to start
             time.sleep(3)
             return self.is_running()
         except Exception as e:

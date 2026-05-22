@@ -38,10 +38,11 @@ export default defineConfig({
         ws: true,
       },
       '/uiautodev': {
-        target: 'http://127.0.0.1:20243',
+        target: 'https://uiauto2.devsleep.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/uiautodev/, ''),
         ws: true,
+        secure: true,
       },
     },
   },

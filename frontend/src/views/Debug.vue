@@ -32,7 +32,7 @@
         </a-card>
       </a-col>
 
-      <a-col :span="24" v-if="uiautodevStatus.running">
+      <a-col :span="24">
         <a-card title="设备选择" size="small">
           <a-space>
             <a-select v-model:value="selectedDevice" placeholder="选择要调试的设备" style="width: 300px" @change="handleDeviceChange">
@@ -52,7 +52,7 @@
         </a-card>
       </a-col>
 
-      <a-col :span="24" v-if="uiautodevStatus.running">
+      <a-col :span="24">
         <a-card size="small">
           <template #title>
             <a-space>
@@ -90,29 +90,18 @@
           </div>
         </a-card>
       </a-col>
-
-      <a-col :span="24" v-else>
-        <a-card>
-          <a-empty description="uiautodev 服务未启动，请先启动服务">
-            <a-button type="primary" @click="startUiautodev">启动服务</a-button>
-          </a-empty>
-        </a-card>
-      </a-col>
-    </a-row>
-  </div>
+  </a-row>
+</div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { ReloadOutlined, FullscreenOutlined } from '@ant-design/icons-vue'
 import { getDevices } from '../api'
 
 const devices = ref([])
 const selectedDevice = ref(null)
-const uiautodevStatus = ref({ running: false, url: '', host: '', port: 0 })
-const starting = ref(false)
 const loading = ref(false)
 const debugIframe = ref(null)
 const currentUrl = ref('')
@@ -120,7 +109,6 @@ const iframeKey = ref(0)
 const iframeHeight = ref(600)
 
 const currentIframeSrc = computed(() => {
-  if (!uiautodevStatus.value.running) return ''
   if (currentUrl.value) return currentUrl.value
   return '/uiautodev/'
 })
@@ -134,60 +122,15 @@ const fetchDevices = async () => {
   }
 }
 
-const fetchUiautodevStatus = async () => {
-  try {
-    const res = await axios.get('/api/debug/uiautodev/status')
-    uiautodevStatus.value = res.data
-  } catch (error) {
-    console.error('Failed to fetch uiautodev status:', error)
-  }
-}
-
 const reloadIframe = (newUrl) => {
   loading.value = true
   currentUrl.value = newUrl
   iframeKey.value++
 }
 
-const startUiautodev = async () => {
-  starting.value = true
-  try {
-    const res = await axios.post('/api/debug/uiautodev/start')
-    if (res.data.success) {
-      message.success('uiautodev 服务启动成功')
-      await fetchUiautodevStatus()
-      setTimeout(() => {
-        reloadIframe('/uiautodev/')
-      }, 1000)
-    } else {
-      message.error('uiautodev 服务启动失败')
-    }
-  } catch (error) {
-    message.error('启动失败: ' + (error.response?.data?.detail || error.message))
-  } finally {
-    starting.value = false
-  }
-}
-
-const stopUiautodev = async () => {
-  try {
-    await axios.post('/api/debug/uiautodev/stop')
-    message.success('uiautodev 服务已停止')
-    await fetchUiautodevStatus()
-    currentUrl.value = ''
-  } catch (error) {
-    message.error('停止失败: ' + (error.response?.data?.detail || error.message))
-  }
-}
-
-const handleDeviceChange = async (serial) => {
+const handleDeviceChange = (serial) => {
   if (!serial) return
-  try {
-    const res = await axios.get(`/api/debug/uiautodev/device/${serial}`)
-    currentUrl.value = `/uiautodev/android/${serial}`
-  } catch (error) {
-    message.error('获取设备调试 URL 失败')
-  }
+  currentUrl.value = `/uiautodev/android/${serial}`
 }
 
 const loadDevice = () => {
@@ -200,9 +143,8 @@ const loadRoot = () => {
 }
 
 const openInNewTab = () => {
-  const baseUrl = uiautodevStatus.value.url
   if (selectedDevice.value) {
-    window.open(`${baseUrl}/android/${selectedDevice.value}`, '_blank')
+    window.open(`https://uiauto2.devsleep.com/android/${selectedDevice.value}`, '_blank')
   } else {
     window.open(baseUrl, '_blank')
   }

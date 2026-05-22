@@ -200,7 +200,12 @@ const loadRoot = () => {
 }
 
 const openInNewTab = () => {
-  window.open(uiautodevStatus.value.url, '_blank')
+  const baseUrl = uiautodevStatus.value.url
+  if (selectedDevice.value) {
+    window.open(`${baseUrl}/android/${selectedDevice.value}`, '_blank')
+  } else {
+    window.open(baseUrl, '_blank')
+  }
 }
 
 const refreshIframe = () => {

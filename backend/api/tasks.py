@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from db.database import get_db
 from models.test_task import TestTask
 from models.task_result import TaskResult
+from models.test_case import TestCase
+from models.script import Script
 from schemas.test_task import TestTaskCreate, TestTaskResponse, TaskResultResponse
 from core.task_dispatcher import TaskDispatcher
 from websocket.log_stream import log_stream_manager
@@ -20,6 +22,21 @@ def list_tasks(db: Session = Depends(get_db)):
     for task in tasks:
         if isinstance(task.device_ids, str):
             task.device_ids = json.loads(task.device_ids)
+        # 获取用例或脚本的名称
+        if task.case_id:
+            case = db.query(TestCase).filter(TestCase.id == task.case_id).first()
+            if case:
+                task.content_name = case.name
+        elif task.script_id:
+            script = db.query(Script).filter(Script.id == task.script_id).first()
+            if script:
+                task.content_name = script.name
+        # 获取失败原因
+        results = db.query(TaskResult).filter(TaskResult.task_id == task.id).all()
+        if results:
+            failed_result = next((r for r in results if r.status == 'failed' and r.error_message), None)
+            if failed_result:
+                task.error_message = failed_result.error_message
     return tasks
 
 @router.post("/tasks", response_model=TestTaskResponse)

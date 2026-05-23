@@ -146,6 +146,11 @@ const getRowClass = (record) => {
 const onSelectChange = (keys) => { selectedRowKeys.value = keys }
 
 const getContentName = (record) => {
+  // 优先使用后端返回的名称
+  if (record.content_name) {
+    return record.content_name
+  }
+  // 降级到本地查找
   if (record.case_id) {
     const c = projectCases.value.find(c => c.id === record.case_id)
     return c ? c.name : record.case_id
@@ -168,6 +173,10 @@ const getFailureReason = (record) => {
   if (record.status === 'completed') {
     return ''
   }
+  // 优先使用后端返回的error_message
+  if (record.error_message) {
+    return record.error_message
+  }
   // 查找第一个失败的结果的错误信息
   if (record.results && record.results.length > 0) {
     const failedResult = record.results.find(r => r.status === 'failed' && r.error_message)
@@ -182,10 +191,6 @@ const getFailureReason = (record) => {
         return step.error
       }
     }
-  }
-  // 如果有错误字段，显示错误
-  if (record.error_message) {
-    return record.error_message
   }
   return '执行失败'
 }

@@ -90,10 +90,14 @@ class AndroidExecutor(BaseExecutor):
         try:
             if keyword_name == "click":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                element.wait(timeout=timeout)
                 element.click()
 
             elif keyword_name == "input":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                element.wait(timeout=timeout)
                 text = params.get("text", "")
                 element.set_text(text)
 
@@ -226,15 +230,21 @@ class AndroidExecutor(BaseExecutor):
 
             elif keyword_name == "long_click":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                element.wait(timeout=timeout)
                 duration = params.get("duration", 2000)
                 element.long_click(duration=duration)
 
             elif keyword_name == "clear_text":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                element.wait(timeout=timeout)
                 element.clear_text()
 
             elif keyword_name == "get_text":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                element.wait(timeout=timeout)
                 text = element.get_text()
                 self._log(f"Element text: {text}", "INFO")
 
@@ -272,6 +282,8 @@ class AndroidExecutor(BaseExecutor):
 
             elif keyword_name == "drag_and_drop":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                element.wait(timeout=timeout)
                 end_x = params.get("end_x", 0)
                 end_y = params.get("end_y", 0)
                 element.drag(end_x, end_y)

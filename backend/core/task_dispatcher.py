@@ -92,6 +92,7 @@ class TaskDispatcher:
                 task_id=task_id,
                 name=f"任务报告_{task_id[:12]}",
                 content=html,
+                execution_time=datetime.now(timezone.utc),
             )
             db.add(report_record)
             db.commit()
@@ -173,9 +174,10 @@ class TaskDispatcher:
                 # 中止的任务不生成报告
                 return {"status": "cancelled", "task_id": task_id}
 
-            # 任务执行完成（无论成功失败），状态都标记为已完成
-            # 场景失败只是测试步骤失败，但任务本身已执行完毕
-            task.status = "completed"
+            # 根据执行结果更新任务状态
+            # 如果有任何设备执行失败，任务状态为失败
+            has_failure = any(r.get("status") != "success" for r in results.values())
+            task.status = "failed" if has_failure else "completed"
             db.commit()
 
             # 只有非中止任务才生成报告

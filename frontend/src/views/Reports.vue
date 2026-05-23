@@ -43,6 +43,7 @@ const searchText = ref('')
 const columns = [
   { title: '报告名称', dataIndex: 'name', key: 'name' },
   { title: '任务ID', key: 'taskId', slots: { customRender: 'taskId' } },
+  { title: '执行时间', dataIndex: 'execution_time', key: 'execution_time', width: 180 },
   { title: '任务状态', key: 'taskStatus', slots: { customRender: 'taskStatus' }, width: 100 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
   { title: '操作', key: 'action', slots: { customRender: 'action' }, width: 200 },

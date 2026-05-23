@@ -117,11 +117,11 @@ const onlineDevices = computed(() => devices.value.filter(d => d.status === 'onl
 
 const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 120 },
-  { title: '测试内容', key: 'contentName', slots: { customRender: 'contentName' } },
+  { title: '测试标题', key: 'contentName', slots: { customRender: 'contentName' } },
   { title: '类型', key: 'contentType', slots: { customRender: 'contentType' } },
   { title: 'APK包', key: 'apkVersion', slots: { customRender: 'apkVersion' } },
   { title: '状态', dataIndex: 'status', key: 'status', slots: { customRender: 'status' } },
-  { title: '失败原因', key: 'failureReason', slots: { customRender: 'failureReason' }, ellipsis: true, width: 200 },
+  { title: '备注', key: 'failureReason', slots: { customRender: 'failureReason' }, ellipsis: true, width: 300 },
   { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
@@ -164,8 +164,9 @@ const getApkLabel = (apkId) => {
 }
 
 const getFailureReason = (record) => {
+  // 成功时显示空
   if (record.status === 'completed') {
-    return 'No reason'
+    return ''
   }
   // 查找第一个失败的结果的错误信息
   if (record.results && record.results.length > 0) {
@@ -173,6 +174,18 @@ const getFailureReason = (record) => {
     if (failedResult) {
       return failedResult.error_message
     }
+    // 如果有失败的步骤，显示步骤信息
+    const failedStep = record.results.find(r => r.steps && r.steps.some(s => s.status === 'failed'))
+    if (failedStep && failedStep.steps) {
+      const step = failedStep.steps.find(s => s.status === 'failed')
+      if (step && step.error) {
+        return step.error
+      }
+    }
+  }
+  // 如果有错误字段，显示错误
+  if (record.error_message) {
+    return record.error_message
   }
   return '执行失败'
 }

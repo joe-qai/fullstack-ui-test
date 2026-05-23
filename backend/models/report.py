@@ -14,4 +14,5 @@ class Report(Base):
     task_id = Column(String, ForeignKey("test_tasks.id"), nullable=False)
     name = Column(String)
     content = Column(Text, nullable=False)
+    execution_time = Column(DateTime)
     created_at = Column(DateTime, default=utc_now)

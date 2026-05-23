@@ -24,5 +24,6 @@ class ReportListResponse(BaseModel):
     id: str
     task_id: str
     name: str | None = None
+    execution_time: datetime | None = None
     created_at: datetime
     task_status: str | None = None

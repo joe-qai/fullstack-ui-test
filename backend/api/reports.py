@@ -19,6 +19,7 @@ def list_reports(db: Session = Depends(get_db)):
         Report.id,
         Report.task_id,
         Report.name,
+        Report.execution_time,
         Report.created_at,
         TestTask.status.label("task_status"),
     ).outerjoin(TestTask, Report.task_id == TestTask.id).order_by(desc(Report.created_at)).all()
@@ -27,6 +28,7 @@ def list_reports(db: Session = Depends(get_db)):
             id=row.id,
             task_id=row.task_id,
             name=row.name,
+            execution_time=row.execution_time,
             created_at=row.created_at,
             task_status=row.task_status,
         )

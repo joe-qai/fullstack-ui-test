@@ -302,9 +302,16 @@ class TaskDispatcher:
 
             result.status = execution_result.get("status", "failed")
             result.end_time = datetime.now(timezone.utc)
-            # 保存错误信息到数据库
-            if execution_result.get("status") != "success" and execution_result.get("error"):
-                result.error_message = execution_result.get("error")
+            # 保存错误信息到数据库，优先使用步骤详情
+            if execution_result.get("status") != "success":
+                # 查找第一个失败步骤的详细信息
+                error_msg = execution_result.get("error")
+                if not error_msg and execution_result.get("steps"):
+                    for step in execution_result["steps"]:
+                        if step.get("status") == "failed" and step.get("error"):
+                            error_msg = f"Step {step.get('order')}: {step.get('keyword')} - FAILED: {step.get('error')}"
+                            break
+                result.error_message = error_msg
             else:
                 result.error_message = None  # 成功时清空错误信息
             db.commit()

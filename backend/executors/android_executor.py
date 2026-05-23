@@ -19,6 +19,7 @@ class AndroidExecutor(BaseExecutor):
         self.current_step = 0
         self.logs = []
         self.screenshots = []
+        self.last_error = None
 
     def _log(self, message: str, level: str = "INFO"):
         """Add a log entry."""
@@ -119,36 +120,57 @@ class AndroidExecutor(BaseExecutor):
 
             elif keyword_name == "assert_element_exists":
                 element = self._find_element(d, locator)
-                assert element.exists, "Element does not exist"
-                self._log("Assertion passed: element exists", "INFO")
+                timeout = params.get("timeout", 10)
+                if not element.wait(timeout=timeout):
+                    raise AssertionError(f"Element does not exist (waited {timeout}s)")
+                self._log(f"Assertion passed: element exists after {timeout}s", "INFO")
 
             elif keyword_name == "assert_element_not_exists":
                 element = self._find_element(d, locator)
-                assert not element.exists, "Element should not exist"
+                timeout = params.get("timeout", 10)
+                if element.wait(timeout=timeout):
+                    raise AssertionError(f"Element should not exist but it does")
                 self._log("Assertion passed: element does not exist", "INFO")
 
             elif keyword_name == "assert_element_visible":
                 element = self._find_element(d, locator)
-                assert element.exists and element.info.get("visible", True), "Element is not visible"
+                timeout = params.get("timeout", 10)
+                if not element.wait(timeout=timeout):
+                    raise AssertionError(f"Element is not visible (waited {timeout}s)")
+                if not element.info.get("visible", True):
+                    raise AssertionError("Element is not visible")
                 self._log("Assertion passed: element is visible", "INFO")
 
             elif keyword_name == "assert_element_not_visible":
                 element = self._find_element(d, locator)
-                assert not element.exists or not element.info.get("visible", True), "Element should not be visible"
+                timeout = params.get("timeout", 10)
+                if element.wait(timeout=timeout):
+                    if element.info.get("visible", True):
+                        raise AssertionError("Element should not be visible but it is")
                 self._log("Assertion passed: element is not visible", "INFO")
 
             elif keyword_name == "assert_element_enabled":
                 element = self._find_element(d, locator)
-                assert element.exists and element.info.get("enabled", True), "Element is not enabled"
+                timeout = params.get("timeout", 10)
+                if not element.wait(timeout=timeout):
+                    raise AssertionError(f"Element is not enabled (waited {timeout}s)")
+                if not element.info.get("enabled", True):
+                    raise AssertionError("Element is not enabled")
                 self._log("Assertion passed: element is enabled", "INFO")
 
             elif keyword_name == "assert_element_disabled":
                 element = self._find_element(d, locator)
-                assert not element.info.get("enabled", True), "Element should be disabled"
+                timeout = params.get("timeout", 10)
+                if element.wait(timeout=timeout):
+                    if element.info.get("enabled", True):
+                        raise AssertionError("Element should be disabled but it is enabled")
                 self._log("Assertion passed: element is disabled", "INFO")
 
             elif keyword_name == "assert_text_equals":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                if not element.wait(timeout=timeout):
+                    raise AssertionError(f"Element not found for text assertion (waited {timeout}s)")
                 actual = element.get_text()
                 expected = params.get("expected", "")
                 assert actual == expected, f"Text mismatch: expected '{expected}', got '{actual}'"
@@ -156,6 +178,9 @@ class AndroidExecutor(BaseExecutor):
 
             elif keyword_name == "assert_text_contains":
                 element = self._find_element(d, locator)
+                timeout = params.get("timeout", 10)
+                if not element.wait(timeout=timeout):
+                    raise AssertionError(f"Element not found for text assertion (waited {timeout}s)")
                 actual = element.get_text()
                 expected = params.get("expected", "")
                 assert expected in actual, f"Text '{expected}' not found in '{actual}'"
@@ -163,12 +188,16 @@ class AndroidExecutor(BaseExecutor):
 
             elif keyword_name == "assert_text_on_screen":
                 target = params.get("text", "")
-                assert d(text=target).exists, f"Text '{target}' not found on screen"
+                timeout = params.get("timeout", 10)
+                if not d(text=target).wait(timeout=timeout):
+                    raise AssertionError(f"Text '{target}' not found on screen (waited {timeout}s)")
                 self._log(f"Assertion passed: text '{target}' found on screen", "INFO")
 
             elif keyword_name == "assert_text_not_on_screen":
                 target = params.get("text", "")
-                assert not d(text=target).exists, f"Text '{target}' should not be on screen"
+                timeout = params.get("timeout", 10)
+                if d(text=target).wait(timeout=timeout):
+                    raise AssertionError(f"Text '{target}' should not be on screen but it is")
                 self._log(f"Assertion passed: text '{target}' not on screen", "INFO")
 
             elif keyword_name == "press_back":
@@ -338,6 +367,7 @@ class AndroidExecutor(BaseExecutor):
             return True
 
         except Exception as e:
+            self.last_error = str(e)
             self._log(f"Keyword execution failed: {e}", "ERROR")
             return False
 
@@ -405,6 +435,7 @@ class AndroidExecutor(BaseExecutor):
                         params = json.loads(step.params)
 
                     # Execute keyword
+                    self.last_error = None
                     success = self._execute_keyword(self.d, kw_name, locator, params)
 
                     if success:
@@ -412,8 +443,8 @@ class AndroidExecutor(BaseExecutor):
                         self._log(f"Step {step.step_order}: {kw_name} - SUCCESS")
                     else:
                         step_result["status"] = "failed"
-                        step_result["error"] = f"Keyword {kw_name} failed"
-                        self._log(f"Step {step.step_order}: {kw_name} - FAILED", "ERROR")
+                        step_result["error"] = self.last_error or f"Keyword {kw_name} failed"
+                        self._log(f"Step {step.step_order}: {kw_name} - FAILED: {step_result['error']}", "ERROR")
 
                     # Take screenshot
                     screenshot_path = self._take_screenshot(f"step_{step.step_order}")

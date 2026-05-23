@@ -418,6 +418,11 @@ class AndroidExecutor(BaseExecutor):
 
                 result["steps"].append(step_result)
 
+                # Stop execution if current step failed
+                if step_result["status"] == "failed":
+                    self._log(f"Test stopped at step {step.step_order} due to failure", "WARNING")
+                    break
+
             # 5. Determine overall status
             failed_steps = [s for s in result["steps"] if s["status"] == "failed"]
             if failed_steps:

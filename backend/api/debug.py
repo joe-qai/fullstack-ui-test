@@ -29,6 +29,15 @@ def stop_uiautodev():
         "status": uiautodev_manager.get_status(),
     }
 
+@router.post("/uiautodev/restart")
+def restart_uiautodev():
+    """Restart uiautodev server."""
+    success = uiautodev_manager.restart()
+    return {
+        "success": success,
+        "status": uiautodev_manager.get_status(),
+    }
+
 @router.get("/uiautodev/device/{device_serial}")
 def get_device_debug_url(device_serial: str):
     """Get uiautodev URL for a specific device."""

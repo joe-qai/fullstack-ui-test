@@ -42,6 +42,12 @@ class UiautodevManager:
             print(f"Failed to stop uiautodev: {e}")
             return False
 
+    def restart(self) -> bool:
+        """Restart uiautodev server."""
+        self.stop()
+        time.sleep(1)
+        return self.start()
+
     def is_running(self) -> bool:
         """Check if uiautodev server is running."""
         health_paths = ["/", "/status", "/health", ""]

@@ -6,12 +6,33 @@
           <a-row :gutter="8" align="middle">
             <a-col :flex="1">
               <a-space wrap>
-                <a-tag color="green">运行中</a-tag>
-                <span class="service-name">云端服务: uiauto2.devsleep.com</span>
+                <a-tag :color="serviceStatus.running ? 'green' : 'red'">
+                  {{ serviceStatus.running ? '运行中' : '已停止' }}
+                </a-tag>
+                <span class="service-name">
+                  {{ serviceStatus.running ? `本地服务: ${serviceStatus.url}` : 'uiauto.dev 服务未启动' }}
+                </span>
               </a-space>
             </a-col>
             <a-col :flex="none">
               <a-space wrap size="small">
+                <a-button 
+                  size="small" 
+                  @click="toggleService"
+                  :type="serviceStatus.running ? 'default' : 'primary'"
+                  :loading="serviceLoading"
+                >
+                  {{ serviceStatus.running ? '停止服务' : '启动服务' }}
+                </a-button>
+                <a-button 
+                  size="small" 
+                  @click="restartService"
+                  :disabled="!serviceStatus.running || serviceLoading"
+                >
+                  <template #icon><ReloadOutlined /></template>
+                  重启服务
+                </a-button>
+                <a-divider type="vertical" />
                 <a-select v-model:value="selectedDevice" placeholder="选择设备" style="width: 260px" @change="handleDeviceChange">
                   <a-select-option v-for="device in devices" :key="device.id" :value="device.serial">
                     {{ device.name || device.serial }}
@@ -65,7 +86,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ReloadOutlined, FullscreenOutlined } from '@ant-design/icons-vue'
-import { getDevices } from '../api'
+import { getDevices } from '../api/device'
+import axios from 'axios'
 
 const devices = ref([])
 const selectedDevice = ref(null)
@@ -74,11 +96,23 @@ const debugIframe = ref(null)
 const currentUrl = ref('')
 const iframeKey = ref(0)
 const iframeHeight = ref(600)
+const serviceStatus = ref({
+  running: false,
+  url: '',
+  host: '',
+  port: 0,
+})
+const serviceLoading = ref(false)
 
 const currentIframeSrc = computed(() => {
   if (currentUrl.value) {
-    // 将 /uiautodev/ 前缀替换为完整的云端 URL
+    if (serviceStatus.value.running) {
+      return `http://${serviceStatus.value.host}:${serviceStatus.value.port}${currentUrl.value.replace('/uiautodev', '')}`
+    }
     return currentUrl.value.replace('/uiautodev/', 'https://uiauto2.devsleep.com/')
+  }
+  if (serviceStatus.value.running) {
+    return `http://${serviceStatus.value.host}:${serviceStatus.value.port}/`
   }
   return 'https://uiauto2.devsleep.com/'
 })
@@ -89,6 +123,70 @@ const fetchDevices = async () => {
     devices.value = res.data
   } catch (error) {
     console.error('Failed to fetch devices:', error)
+  }
+}
+
+const fetchServiceStatus = async () => {
+  try {
+    const res = await axios.get('/api/debug/uiautodev/status')
+    serviceStatus.value = res.data
+  } catch (error) {
+    serviceStatus.value = { running: false, url: '', host: '', port: 0 }
+    console.error('Failed to fetch service status:', error)
+  }
+}
+
+const startService = async () => {
+  try {
+    serviceLoading.value = true
+    const res = await axios.post('/api/debug/uiautodev/start')
+    if (res.data.success) {
+      serviceStatus.value = res.data.status
+      console.log('Service started successfully')
+    }
+  } catch (error) {
+    console.error('Failed to start service:', error)
+  } finally {
+    serviceLoading.value = false
+  }
+}
+
+const stopService = async () => {
+  try {
+    serviceLoading.value = true
+    const res = await axios.post('/api/debug/uiautodev/stop')
+    if (res.data.success) {
+      serviceStatus.value = res.data.status
+      console.log('Service stopped successfully')
+    }
+  } catch (error) {
+    console.error('Failed to stop service:', error)
+  } finally {
+    serviceLoading.value = false
+  }
+}
+
+const restartService = async () => {
+  try {
+    serviceLoading.value = true
+    const res = await axios.post('/api/debug/uiautodev/restart')
+    if (res.data.success) {
+      serviceStatus.value = res.data.status
+      console.log('Service restarted successfully')
+      refreshIframe()
+    }
+  } catch (error) {
+    console.error('Failed to restart service:', error)
+  } finally {
+    serviceLoading.value = false
+  }
+}
+
+const toggleService = () => {
+  if (serviceStatus.value.running) {
+    stopService()
+  } else {
+    startService()
   }
 }
 
@@ -113,11 +211,8 @@ const loadRoot = () => {
 }
 
 const openInNewTab = () => {
-  if (selectedDevice.value) {
-    window.open(`https://uiauto2.devsleep.com/android/${selectedDevice.value}`, '_blank')
-  } else {
-    window.open('https://uiauto2.devsleep.com', '_blank')
-  }
+  const url = currentIframeSrc.value
+  window.open(url, '_blank')
 }
 
 const refreshIframe = () => {
@@ -142,6 +237,7 @@ const onIframeLoad = () => {
 
 onMounted(() => {
   fetchDevices()
+  fetchServiceStatus()
   
   const updateHeight = () => {
     iframeHeight.value = Math.max(window.innerHeight - 160, 500)

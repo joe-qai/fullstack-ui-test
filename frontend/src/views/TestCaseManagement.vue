@@ -18,9 +18,17 @@
         <template #stepCount="{ record }">{{ record.steps?.length || 0 }}</template>
         <template #dependsOn="{ record }">{{ getDependsName(record.depends_on) }}</template>
         <template #action="{ record }">
-          <a-button type="link" @click="startEditCase(record)">编辑</a-button>
+          <a-tooltip title="编辑">
+            <a-button type="link" @click="startEditCase(record)">
+              <template #icon><EditOutlined /></template>
+            </a-button>
+          </a-tooltip>
           <a-popconfirm title="确定删除?" @confirm="handleDeleteCase(record.id)">
-            <a-button type="link" danger>删除</a-button>
+            <a-tooltip title="删除">
+              <a-button type="link" danger>
+                <template #icon><DeleteOutlined /></template>
+              </a-button>
+            </a-tooltip>
           </a-popconfirm>
         </template>
       </a-table>
@@ -128,7 +136,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import {
-  PlusOutlined, ArrowUpOutlined, ArrowDownOutlined, DeleteOutlined,
+  PlusOutlined, ArrowUpOutlined, ArrowDownOutlined, DeleteOutlined, EditOutlined,
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import {

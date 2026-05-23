@@ -33,7 +33,7 @@
           <a-descriptions-item label="项目名称">{{ project?.name }}</a-descriptions-item>
           <a-descriptions-item label="平台">{{ project?.platform }}</a-descriptions-item>
           <a-descriptions-item label="描述" :span="2">{{ project?.description || '无' }}</a-descriptions-item>
-          <a-descriptions-item label="创建时间">{{ project?.created_at }}</a-descriptions-item>
+          <a-descriptions-item label="创建时间">{{ formatDate(project?.created_at) }}</a-descriptions-item>
         </a-descriptions>
       </a-card>
     </a-spin>
@@ -44,6 +44,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getProject, getPages, getCases, getScripts } from '../api'
+import { formatDate } from '../utils/format'
 
 const route = useRoute()
 const router = useRouter()

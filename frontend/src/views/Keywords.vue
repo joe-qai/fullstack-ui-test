@@ -11,9 +11,17 @@
         <a-tag :color="getCategoryColor(record.category)">{{ record.category }}</a-tag>
       </template>
       <template #action="{ record }">
-        <a-button v-if="record.category === 'custom'" type="link" @click="openEditModal(record)">编辑</a-button>
+        <a-tooltip v-if="record.category === 'custom'" title="编辑">
+          <a-button type="link" @click="openEditModal(record)">
+            <template #icon><EditOutlined /></template>
+          </a-button>
+        </a-tooltip>
         <a-popconfirm v-if="record.category === 'custom'" title="确定删除?" @confirm="handleDelete(record.id)">
-          <a-button type="link" danger>删除</a-button>
+          <a-tooltip title="删除">
+            <a-button type="link" danger>
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
       </template>
     </a-table>
@@ -59,6 +67,7 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { getKeywords, createCustomKeyword, updateKeyword, deleteKeyword } from '../api'
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 
 const keywords = ref([])
 const loading = ref(false)

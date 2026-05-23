@@ -23,11 +23,16 @@ class TestUiautodevManager:
             mock_get.side_effect = Exception("Connection refused")
             status = self.manager.get_status()
             assert status["running"] is False
-            assert status["url"] == "http://127.0.0.1:20243"
+            assert status["url"] == "https://uiauto2.devsleep.com"
             assert status["host"] == "127.0.0.1"
             assert status["port"] == 20243
 
     def test_get_device_url(self):
         """Test getting device debug URL."""
         url = self.manager.get_device_url("abc123")
-        assert url == "http://127.0.0.1:20243/android/abc123"
+        assert url == "https://uiauto2.devsleep.com/android/abc123"
+
+    def test_get_device_url_with_platform(self):
+        """Test getting device debug URL with custom platform."""
+        url = self.manager.get_device_url("abc123", platform="iOS")
+        assert url == "https://uiauto2.devsleep.com/iOS/abc123"

@@ -21,16 +21,30 @@
         <a-tag :color="getStatusColor(record.status)">{{ getStatusText(record.status) }}</a-tag>
       </template>
       <template #failureReason="{ record }">
-        <span :style="{ color: record.status === 'completed' ? '#52c41a' : '#ff4d4f' }">
+        <span :style="{ color: getFailureColor(record.status) }">
           {{ getFailureReason(record) }}
         </span>
       </template>
+      <template #createdAt="{ record }">{{ formatDate(record.created_at) }}</template>
       <template #action="{ record }">
+        <a-tooltip v-if="['failed', 'cancelled'].includes(record.status)" title="重新执行">
+          <a-button type="link" @click="handleReExecute(record.id)" :loading="executingTaskId === record.id">
+            <template #icon><RedoOutlined /></template>
+          </a-button>
+        </a-tooltip>
         <a-popconfirm v-if="record.status === 'running'" title="确定中止?" @confirm="handleAbort(record.id)">
-          <a-button type="link" danger>中止</a-button>
+          <a-tooltip title="中止">
+            <a-button type="link" danger>
+              <template #icon><CloseCircleOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
         <a-popconfirm v-if="canDelete(record)" title="确定删除?" @confirm="handleDelete(record.id)">
-          <a-button type="link" danger>删除</a-button>
+          <a-tooltip title="删除">
+            <a-button type="link" danger>
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
       </template>
     </a-table>
@@ -91,7 +105,10 @@ import {
   getProjects, getAllCases, getAllScripts, getApks, getDevices, getTasks,
   createTask, executeTask as executeTaskApi,
   deleteTask as deleteTaskApi, batchDeleteTasks as batchDeleteTasksApi,
+  abortTask as abortTaskApi,
 } from '../api'
+import { formatDate } from '../utils/format'
+import { RedoOutlined, CloseCircleOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import axios from 'axios'
 
 const tasks = ref([])
@@ -102,6 +119,7 @@ const projectApks = ref([])
 const devices = ref([])
 const loading = ref(false)
 const creating = ref(false)
+const executingTaskId = ref(null)
 const devicesLoading = ref(false)
 const showCreateModal = ref(false)
 const selectedRowKeys = ref([])
@@ -122,7 +140,7 @@ const columns = [
   { title: 'APK包', key: 'apkVersion', slots: { customRender: 'apkVersion' } },
   { title: '状态', dataIndex: 'status', key: 'status', slots: { customRender: 'status' } },
   { title: '备注', key: 'failureReason', slots: { customRender: 'failureReason' }, ellipsis: true, width: 300 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+  { title: '创建时间', key: 'createdAt', slots: { customRender: 'createdAt' }, width: 160 },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
 
@@ -169,21 +187,18 @@ const getApkLabel = (apkId) => {
 }
 
 const getFailureReason = (record) => {
-  // 成功时显示空
-  if (record.status === 'completed') {
-    return ''
-  }
-  // 优先使用后端返回的error_message
+  if (record.status === 'completed') return ''
+  if (record.status === 'running') return ''
+  if (record.status === 'cancelled') return '已取消'
+  // failed - 显示错误信息
   if (record.error_message) {
     return record.error_message
   }
-  // 查找第一个失败的结果的错误信息
   if (record.results && record.results.length > 0) {
     const failedResult = record.results.find(r => r.status === 'failed' && r.error_message)
     if (failedResult) {
       return failedResult.error_message
     }
-    // 如果有失败的步骤，显示步骤信息
     const failedStep = record.results.find(r => r.steps && r.steps.some(s => s.status === 'failed'))
     if (failedStep && failedStep.steps) {
       const step = failedStep.steps.find(s => s.status === 'failed')
@@ -193,6 +208,11 @@ const getFailureReason = (record) => {
     }
   }
   return '执行失败'
+}
+
+const getFailureColor = (status) => {
+  const colors = { completed: '#52c41a', failed: '#ff4d4f', cancelled: '#faad14' }
+  return colors[status] || 'inherit'
 }
 
 const fetchTasks = async () => {
@@ -287,6 +307,29 @@ const handleCreateTask = async () => {
     message.error('创建失败: ' + (error.response?.data?.detail || error.message))
   } finally {
     creating.value = false
+  }
+}
+
+const handleReExecute = async (id) => {
+  executingTaskId.value = id
+  try {
+    await executeTaskApi(id)
+    message.success('任务已重新执行')
+    fetchTasks()
+  } catch (error) {
+    message.error('重新执行失败: ' + (error.response?.data?.detail || error.message))
+  } finally {
+    executingTaskId.value = null
+  }
+}
+
+const handleAbort = async (id) => {
+  try {
+    await abortTaskApi(id)
+    message.success('任务已中止')
+    fetchTasks()
+  } catch (error) {
+    message.error('中止失败: ' + (error.response?.data?.detail || error.message))
   }
 }
 

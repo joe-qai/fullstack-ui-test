@@ -19,11 +19,25 @@
       <template #taskStatus="{ record }">
         <a-tag :color="getStatusColor(record.task_status)">{{ getStatusText(record.task_status) }}</a-tag>
       </template>
+      <template #executionTime="{ record }">{{ formatDate(record.execution_time) }}</template>
+      <template #createdAt="{ record }">{{ formatDate(record.created_at) }}</template>
       <template #action="{ record }">
-        <a-button type="link" @click="viewReport(record.id)">查看</a-button>
-        <a-button type="link" @click="downloadReport(record.id, 'html')">下载</a-button>
+        <a-tooltip title="查看">
+          <a-button type="link" @click="viewReport(record.id)">
+            <template #icon><EyeOutlined /></template>
+          </a-button>
+        </a-tooltip>
+        <a-tooltip title="下载">
+          <a-button type="link" @click="downloadReport(record.id, 'html')">
+            <template #icon><DownloadOutlined /></template>
+          </a-button>
+        </a-tooltip>
         <a-popconfirm title="确定删除?" @confirm="handleDelete(record.id)">
-          <a-button type="link" danger>删除</a-button>
+          <a-tooltip title="删除">
+            <a-button type="link" danger>
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
       </template>
     </a-table>
@@ -34,6 +48,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { getReports, deleteReport, batchDeleteReports, getReportDownloadUrl, getReportViewUrl } from '../api'
+import { formatDate } from '../utils/format'
+import { EyeOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 
 const reports = ref([])
 const loading = ref(false)
@@ -43,9 +59,9 @@ const searchText = ref('')
 const columns = [
   { title: '报告名称', dataIndex: 'name', key: 'name' },
   { title: '任务ID', key: 'taskId', slots: { customRender: 'taskId' } },
-  { title: '执行时间', dataIndex: 'execution_time', key: 'execution_time', width: 180 },
+  { title: '执行时间', key: 'executionTime', slots: { customRender: 'executionTime' }, width: 180 },
   { title: '任务状态', key: 'taskStatus', slots: { customRender: 'taskStatus' }, width: 100 },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+  { title: '创建时间', key: 'createdAt', slots: { customRender: 'createdAt' }, width: 160 },
   { title: '操作', key: 'action', slots: { customRender: 'action' }, width: 200 },
 ]
 

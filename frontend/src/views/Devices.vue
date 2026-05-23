@@ -18,17 +18,33 @@
       <template #action="{ record }">
         <template v-if="isTcpipDevice(record.serial)">
           <template v-if="record.status === 'online'">
-            <a-button type="link" danger @click="handleDisconnect(record)">断开</a-button>
+            <a-tooltip title="断开">
+              <a-button type="link" danger @click="handleDisconnect(record)">
+                <template #icon><DisconnectOutlined /></template>
+              </a-button>
+            </a-tooltip>
           </template>
           <template v-else>
-            <a-button type="link" @click="handleReconnect(record)">重连</a-button>
+            <a-tooltip title="重连">
+              <a-button type="link" @click="handleReconnect(record)">
+                <template #icon><ReloadOutlined /></template>
+              </a-button>
+            </a-tooltip>
           </template>
         </template>
         <template v-else-if="record.status === 'online'">
-          <a-button type="link" @click="handleConnect(record)">连接</a-button>
+          <a-tooltip title="连接">
+            <a-button type="link" @click="handleConnect(record)">
+              <template #icon><LinkOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </template>
         <template v-else>
-          <a-button type="link" disabled>离线</a-button>
+          <a-tooltip title="离线">
+            <a-button type="link" disabled>
+              <template #icon><MinusCircleOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </template>
       </template>
     </a-table>
@@ -39,6 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { getDevices, scanDevices, disconnectDevice, connectDevice, connectDeviceOneClick } from '../api'
+import { DisconnectOutlined, ReloadOutlined, LinkOutlined, MinusCircleOutlined } from '@ant-design/icons-vue'
 
 const devices = ref([])
 const loading = ref(false)

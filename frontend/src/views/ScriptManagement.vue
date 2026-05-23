@@ -16,11 +16,24 @@
       :expandable="{ expandedRowRender: expandScript }"
       :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }">
       <template #project="{ record }">{{ getProjectName(record.project_id) }}</template>
+      <template #uploadedAt="{ record }">{{ formatDate(record.uploaded_at) }}</template>
       <template #action="{ record }">
-        <a-button type="link" @click="handleEdit(record)">编辑</a-button>
-        <a-button type="link" @click="handleDownload(record)">下载</a-button>
+        <a-tooltip title="编辑">
+          <a-button type="link" @click="handleEdit(record)">
+            <template #icon><EditOutlined /></template>
+          </a-button>
+        </a-tooltip>
+        <a-tooltip title="下载">
+          <a-button type="link" @click="handleDownload(record)">
+            <template #icon><DownloadOutlined /></template>
+          </a-button>
+        </a-tooltip>
         <a-popconfirm title="确定删除?" @confirm="handleDelete(record.id, record.project_id)">
-          <a-button type="link" danger>删除</a-button>
+          <a-tooltip title="删除">
+            <a-button type="link" danger>
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
       </template>
     </a-table>
@@ -74,8 +87,9 @@
 <script setup>
 import { ref, onMounted, h, reactive, nextTick } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
+import { PlusOutlined, UploadOutlined, EditOutlined, DownloadOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { getProjects, getAllScripts, uploadScript, updateScript, deleteScript as deleteScriptApi, batchDeleteScripts, getScriptDownloadUrl, getScriptContent, updateScriptContent } from '../api'
+import { formatDate } from '../utils/format'
 
 const projects = ref([])
 const scripts = ref([])
@@ -101,7 +115,7 @@ const columns = [
   { title: '所属项目', key: 'project', slots: { customRender: 'project' } },
   { title: '版本', dataIndex: 'version', key: 'version' },
   { title: '类型', dataIndex: 'type', key: 'type' },
-  { title: '上传时间', dataIndex: 'uploaded_at', key: 'uploaded_at' },
+  { title: '上传时间', key: 'uploadedAt', slots: { customRender: 'uploadedAt' }, width: 160 },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
 

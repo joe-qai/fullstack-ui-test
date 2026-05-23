@@ -11,10 +11,22 @@
     <a-table v-if="selectedProject" :columns="poColumns" :data-source="pages" :loading="loading" row-key="id" style="margin-top: 16px"
       :expandable="{ expandedRowRender: renderElements }">
       <template #action="{ record }">
-        <a-button type="link" @click="openEditPageModal(record)">编辑</a-button>
-        <a-button type="link" @click="showCopyModal(record)">跨项目复制</a-button>
+        <a-tooltip title="编辑">
+          <a-button type="link" @click="openEditPageModal(record)">
+            <template #icon><EditOutlined /></template>
+          </a-button>
+        </a-tooltip>
+        <a-tooltip title="跨项目复制">
+          <a-button type="link" @click="showCopyModal(record)">
+            <template #icon><CopyOutlined /></template>
+          </a-button>
+        </a-tooltip>
         <a-popconfirm title="确定删除?" @confirm="handleDeletePage(record.id)">
-          <a-button type="link" danger>删除</a-button>
+          <a-tooltip title="删除">
+            <a-button type="link" danger>
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
       </template>
     </a-table>
@@ -130,6 +142,7 @@
 import { ref, computed, onMounted, h } from 'vue'
 import { message } from 'ant-design-vue'
 import { getProjects, getPages, createPage, deletePage, createElement, deleteElement, copyPage, updateElement, updatePage, getElements } from '../api'
+import { EditOutlined, CopyOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 
 const projects = ref([])
 const selectedProject = ref(null)

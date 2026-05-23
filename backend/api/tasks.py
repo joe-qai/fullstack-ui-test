@@ -10,6 +10,7 @@ from models.test_case import TestCase
 from models.script import Script
 from schemas.test_task import TestTaskCreate, TestTaskResponse, TaskResultResponse
 from core.task_dispatcher import TaskDispatcher
+from core.id_generator import next_id
 from websocket.log_stream import log_stream_manager
 from sqlalchemy import desc
 
@@ -42,6 +43,7 @@ def list_tasks(db: Session = Depends(get_db)):
 @router.post("/tasks", response_model=TestTaskResponse)
 def create_task(task: TestTaskCreate, db: Session = Depends(get_db)):
     db_task = TestTask(
+        id=next_id("task_", TestTask, db),
         case_id=task.case_id,
         script_id=task.script_id,
         apk_id=task.apk_id,

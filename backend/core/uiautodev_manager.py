@@ -1,4 +1,5 @@
 """uiautodev manager for device debugging."""
+import sys
 import subprocess
 import time
 import requests
@@ -16,9 +17,12 @@ class UiautodevManager:
     def start(self) -> bool:
         """Start uiautodev server."""
         try:
-            import sys
-            cmd = ["uiauto.dev.exe" if sys.platform == "win32" else "uiauto.dev",
-                   "server", "--no-browser", "--host", "127.0.0.1", "--port", str(self.port)]
+            import shutil
+            exe_name = "uiauto.dev.exe" if sys.platform == "win32" else "uiauto.dev"
+            if shutil.which(exe_name):
+                cmd = [exe_name, "server", "--no-browser", "--host", "127.0.0.1", "--port", str(self.port)]
+            else:
+                cmd = [sys.executable, "-m", "uiautodev", "--no-browser", "--host", "127.0.0.1", "--port", str(self.port)]
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -31,15 +35,23 @@ class UiautodevManager:
             return False
 
     def stop(self) -> bool:
-        """Stop uiautodev server."""
+        """Stop uiautodev server and kill all uiauto* processes."""
         try:
             if self.process:
                 self.process.terminate()
                 self.process.wait(timeout=5)
                 self.process = None
+        except Exception as e:
+            print(f"Failed to terminate process: {e}")
+
+        try:
+            if sys.platform == "win32":
+                subprocess.run(["taskkill", "/F", "/IM", "uiauto*"], capture_output=True)
+            else:
+                subprocess.run(["pkill", "-f", "uiauto"], capture_output=True)
             return True
         except Exception as e:
-            print(f"Failed to stop uiautodev: {e}")
+            print(f"Failed to kill uiauto processes: {e}")
             return False
 
     def restart(self) -> bool:
@@ -72,14 +84,14 @@ class UiautodevManager:
         """Get uiautodev server status."""
         return {
             "running": self.is_running(),
-            "url": self.server_url,
+            "url": "https://uiauto2.devsleep.com",
             "host": self.host,
             "port": self.port,
         }
 
-    def get_device_url(self, device_serial: str) -> str:
+    def get_device_url(self, device_serial: str, platform: str = "android") -> str:
         """Get device-specific URL for debugging."""
-        return f"{self.server_url}/android/{device_serial}"
+        return f"https://uiauto2.devsleep.com/{platform}/{device_serial}"
 
 # Global instance
 uiautodev_manager = UiautodevManager(port=20243)

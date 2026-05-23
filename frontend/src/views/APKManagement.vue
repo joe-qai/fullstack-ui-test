@@ -4,9 +4,14 @@
 
     <a-table :columns="columns" :data-source="apks" :loading="loading" row-key="id" style="margin-top: 16px">
       <template #fileSize="{ record }">{{ formatSize(record.file_size) }}</template>
+      <template #uploadedAt="{ record }">{{ formatDate(record.uploaded_at) }}</template>
       <template #action="{ record }">
         <a-popconfirm title="确定删除此APK版本?" @confirm="handleDelete(record.id)">
-          <a-button type="link" danger>删除</a-button>
+          <a-tooltip title="删除">
+            <a-button type="link" danger>
+              <template #icon><DeleteOutlined /></template>
+            </a-button>
+          </a-tooltip>
         </a-popconfirm>
       </template>
     </a-table>
@@ -36,6 +41,8 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { getApks, uploadApk, deleteApk } from '../api'
+import { formatDate } from '../utils/format'
+import { DeleteOutlined } from '@ant-design/icons-vue'
 
 const apks = ref([])
 const loading = ref(false)
@@ -51,7 +58,7 @@ const columns = [
   { title: '版本', dataIndex: 'version', key: 'version' },
   { title: '大小', key: 'file_size', slots: { customRender: 'fileSize' } },
   { title: '备注', dataIndex: 'description', key: 'description' },
-  { title: '上传时间', dataIndex: 'uploaded_at', key: 'uploaded_at' },
+  { title: '上传时间', key: 'uploadedAt', slots: { customRender: 'uploadedAt' }, width: 160 },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
 

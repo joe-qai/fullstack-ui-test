@@ -21,10 +21,26 @@
           {{ record.status === 'enabled' ? '启用' : '禁用' }}
         </a-tag>
       </template>
+      <template #createdAt="{ record }">{{ formatDate(record.created_at) }}</template>
       <template #action="{ record }">
-        <a-button type="link" @click="viewProject(record.id)">查看</a-button>
-        <a-button type="link" @click="toggleStatus(record)">{{ record.status === 'enabled' ? '禁用' : '启用' }}</a-button>
-        <a-button type="link" danger @click="onDeleteClick(record)">删除</a-button>
+        <a-tooltip title="查看">
+          <a-button type="link" @click="viewProject(record.id)">
+            <template #icon><EyeOutlined /></template>
+          </a-button>
+        </a-tooltip>
+        <a-tooltip :title="record.status === 'enabled' ? '禁用' : '启用'">
+          <a-button v-if="record.status === 'enabled'" type="link" @click="toggleStatus(record)">
+            <template #icon><StopOutlined /></template>
+          </a-button>
+          <a-button v-else type="link" @click="toggleStatus(record)">
+            <template #icon><CheckCircleOutlined /></template>
+          </a-button>
+        </a-tooltip>
+        <a-tooltip title="删除">
+          <a-button type="link" danger @click="onDeleteClick(record)">
+            <template #icon><DeleteOutlined /></template>
+          </a-button>
+        </a-tooltip>
       </template>
     </a-table>
 
@@ -68,6 +84,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { getProjects, createProject, deleteProject as deleteProjectApi, getProjectStats, updateProject } from '../api'
+import { formatDate } from '../utils/format'
+import { EyeOutlined, StopOutlined, CheckCircleOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 
 const router = useRouter()
 const projects = ref([])
@@ -79,7 +97,7 @@ const columns = [
   { title: '项目名称', dataIndex: 'name', key: 'name' },
   { title: '平台', dataIndex: 'platform', key: 'platform' },
   { title: '状态', key: 'status', slots: { customRender: 'status' } },
-  { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+  { title: '创建时间', key: 'createdAt', slots: { customRender: 'createdAt' }, width: 160 },
   { title: '操作', key: 'action', slots: { customRender: 'action' } },
 ]
 

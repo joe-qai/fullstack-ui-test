@@ -18,6 +18,7 @@ from models.apk_package import APKPackage
 from executors.android_executor import AndroidExecutor
 from executors.script_executor import ScriptExecutor
 from core.report_generator import ReportGenerator
+from core.id_generator import next_id
 
 
 class TaskDispatcher:
@@ -89,6 +90,7 @@ class TaskDispatcher:
 
             # Save to Report table
             report_record = Report(
+                id=next_id("rpt_", Report, db),
                 task_id=task_id,
                 name=f"任务报告_{task_id[:12]}",
                 content=html,
@@ -227,8 +229,6 @@ class TaskDispatcher:
     def _execute_on_device(self, task_id: str, test_case: Optional[TestCase],
                            script: Optional[Script], device_id: str,
                            project: Optional[Project], apk: Optional[APKPackage] = None) -> Dict:
-        proc_ref = [None]
-
         db = SessionLocal()
         try:
             device = db.query(Device).filter(Device.id == device_id).first()
@@ -242,7 +242,7 @@ class TaskDispatcher:
                 TaskResult.task_id == task_id, TaskResult.device_id == device_id
             ).first()
             if not result:
-                result = TaskResult(task_id=task_id, device_id=device_id, status="running")
+                result = TaskResult(id=next_id("tr_", TaskResult, db), task_id=task_id, device_id=device_id, status="running")
                 db.add(result)
                 db.commit()
 
@@ -265,13 +265,21 @@ class TaskDispatcher:
 
             if script:
                 exe = ScriptExecutor()
-                execution_result = exe.run_script(script, device, project)
-                proc_ref[0] = exe.running_process
+                proc = exe.start(script, device, project)
+                if proc:
+                    self._track_process(task_id, proc)
+                execution_result = exe.wait(lambda: self._is_cancelled(task_id))
             elif test_case:
                 if test_case.type == "script":
-                    exe = ScriptExecutor()
-                    execution_result = exe.run(test_case, device, project, db)
-                    proc_ref[0] = exe.running_process
+                    script_obj = db.query(Script).filter(Script.id == test_case.script_id).first()
+                    if script_obj:
+                        exe = ScriptExecutor()
+                        proc = exe.start(script_obj, device, project)
+                        if proc:
+                            self._track_process(task_id, proc)
+                        execution_result = exe.wait(lambda: self._is_cancelled(task_id))
+                    else:
+                        execution_result = {"status": "failed", "error": f"Script {test_case.script_id} not found", "logs": []}
                 else:
                     exe = AndroidExecutor()
                     execution_result = exe.run(test_case, device, project, db)
@@ -287,9 +295,6 @@ class TaskDispatcher:
                 if not script and not test_case:
                     execution_result["status"] = "failed"
                     execution_result["error"] = apk_error
-
-            if proc_ref[0]:
-                self._track_process(task_id, proc_ref[0])
 
             start_time_str = result.start_time.isoformat() if result.start_time else ""
             end_time_str = datetime.now(timezone.utc).isoformat()

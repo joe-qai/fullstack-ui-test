@@ -50,6 +50,7 @@ export const scanDevices = () => api.post('/api/devices/scan')
 export const getTasks = () => api.get('/api/tasks')
 export const createTask = (data) => api.post('/api/tasks', data)
 export const executeTask = (taskId) => api.post(`/api/tasks/${taskId}/execute`)
+export const abortTask = (taskId) => api.post(`/api/tasks/${taskId}/abort`)
 export const deleteTask = (taskId) => api.delete(`/api/tasks/${taskId}`)
 export const batchDeleteTasks = (ids) => api.post('/api/tasks/batch-delete', { ids })
 

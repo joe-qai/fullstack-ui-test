@@ -39,3 +39,4 @@ class TestTaskResponse(TestTaskBase):
     id: str
     created_at: datetime
     results: list[TaskResultResponse] = []
+    content_name: str | None = None

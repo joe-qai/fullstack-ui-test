@@ -86,7 +86,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ReloadOutlined, FullscreenOutlined } from '@ant-design/icons-vue'
-import { getDevices } from '../api/device'
+import { getDevices } from '../api'
 import axios from 'axios'
 
 const devices = ref([])

@@ -1,68 +1,47 @@
 <template>
   <div class="debug">
-    <a-page-header title="在线调试" sub-title="使用 uiautodev 调试真机设备" />
-
-    <a-row :gutter="[16, 16]" style="margin-top: 24px">
+    <a-row :gutter="[8, 8]">
       <a-col :span="24">
-        <a-card title="uiautodev 服务状态" size="small">
-          <a-row :gutter="16" align="middle">
-            <a-col :span="12">
-              <a-space>
-                <span>状态:</span>
+        <a-card size="small" class="toolbar-card">
+          <a-row :gutter="8" align="middle">
+            <a-col :flex="1">
+              <a-space wrap>
                 <a-tag color="green">运行中</a-tag>
-                <span>云端服务: uiauto2.devsleep.com</span>
+                <span class="service-name">云端服务: uiauto2.devsleep.com</span>
               </a-space>
             </a-col>
-            <a-col :span="12" style="text-align: right">
-              <a-space>
-                <a-button @click="openInNewTab">新窗口打开</a-button>
+            <a-col :flex="none">
+              <a-space wrap size="small">
+                <a-select v-model:value="selectedDevice" placeholder="选择设备" style="width: 260px" @change="handleDeviceChange">
+                  <a-select-option v-for="device in devices" :key="device.id" :value="device.serial">
+                    {{ device.name || device.serial }}
+                    <a-tag v-if="device.serial?.includes(':')" color="blue" size="small">WiFi</a-tag>
+                    <a-tag v-else color="green" size="small">USB</a-tag>
+                  </a-select-option>
+                </a-select>
+                <a-button type="primary" size="small" @click="loadDevice" :disabled="!selectedDevice">
+                  加载设备
+                </a-button>
+                <a-button size="small" @click="loadRoot">
+                  加载主页
+                </a-button>
+                <a-button size="small" @click="openInNewTab">新窗口打开</a-button>
+                <a-button size="small" @click="refreshIframe">
+                  <template #icon><ReloadOutlined /></template>
+                  刷新
+                </a-button>
+                <a-button size="small" @click="fullscreen">
+                  <template #icon><FullscreenOutlined /></template>
+                  全屏
+                </a-button>
               </a-space>
             </a-col>
           </a-row>
         </a-card>
       </a-col>
 
-      <a-col :span="24">
-        <a-card title="设备选择" size="small">
-          <a-space>
-            <a-select v-model:value="selectedDevice" placeholder="选择要调试的设备" style="width: 300px" @change="handleDeviceChange">
-              <a-select-option v-for="device in devices" :key="device.id" :value="device.serial">
-                {{ device.name || device.serial }}
-                <a-tag v-if="device.serial?.includes(':')" color="blue" size="small">WiFi</a-tag>
-                <a-tag v-else color="green" size="small">USB</a-tag>
-              </a-select-option>
-            </a-select>
-            <a-button type="primary" @click="loadDevice" :disabled="!selectedDevice">
-              加载设备
-            </a-button>
-            <a-button @click="loadRoot">
-              加载主页
-            </a-button>
-          </a-space>
-        </a-card>
-      </a-col>
-
-      <a-col :span="24">
-        <a-card size="small">
-          <template #title>
-            <a-space>
-              <span>调试界面</span>
-              <a-tag v-if="currentUrl" color="blue">{{ currentUrl }}</a-tag>
-            </a-space>
-          </template>
-          <template #extra>
-            <a-button-group size="small">
-              <a-button @click="refreshIframe">
-                <template #icon><ReloadOutlined /></template>
-                刷新
-              </a-button>
-              <a-button @click="fullscreen">
-                <template #icon><FullscreenOutlined /></template>
-                全屏
-              </a-button>
-            </a-button-group>
-          </template>
-          
+      <a-col :span="24" class="iframe-col">
+        <a-card size="small" class="iframe-card">
           <div class="iframe-container" :style="{ height: iframeHeight + 'px' }">
             <div v-if="loading" class="iframe-loading">
               <a-spin size="large" tip="加载中..." />
@@ -74,7 +53,6 @@
               :src="currentIframeSrc" 
               @load="onIframeLoad"
               frameborder="0" 
-              style="width: 100%; height: 100%; border: none;"
               allowfullscreen
             ></iframe>
           </div>
@@ -166,7 +144,7 @@ onMounted(() => {
   fetchDevices()
   
   const updateHeight = () => {
-    iframeHeight.value = window.innerHeight - 400
+    iframeHeight.value = Math.max(window.innerHeight - 160, 500)
   }
   updateHeight()
   window.addEventListener('resize', updateHeight)
@@ -175,14 +153,96 @@ onMounted(() => {
 
 <style scoped>
 .debug { 
-  padding: 24px; 
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.debug :deep(.ant-row) {
+  margin: 0;
+  min-width: 0;
+}
+
+.debug :deep(.ant-col) {
+  min-width: 0;
+  padding: 0 8px;
+}
+
+.debug :deep(.ant-card) {
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.debug :deep(.ant-card:first-child) {
+  margin-top: 0;
+}
+
+.debug :deep(.ant-card:last-child) {
+  margin-bottom: 0;
+}
+
+.debug :deep(.ant-card-body) {
+  padding: 12px;
+}
+
+.toolbar-card :deep(.ant-card-body) {
+  padding: 8px 12px;
+}
+
+.debug :deep(.ant-space) {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.debug :deep(.ant-select) {
+  min-width: 200px;
+  max-width: 100%;
+}
+
+.service-name {
+  color: #666;
+  font-size: 14px;
+}
+
+.iframe-col {
+  flex: 1;
+}
+
+.iframe-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.iframe-card :deep(.ant-card-body) {
+  flex: 1;
+  padding: 0;
+  display: flex;
+  overflow: hidden;
 }
 
 .iframe-container {
   position: relative;
   background: #f0f2f5;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+.iframe-container iframe {
+  display: block;
+  width: 100%;
+  min-width: 1024px;
+  height: 100%;
+  min-height: 768px;
+  border: 0;
+  overflow: auto;
 }
 
 .iframe-loading {

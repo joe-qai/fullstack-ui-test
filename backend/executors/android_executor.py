@@ -122,21 +122,24 @@ class AndroidExecutor(BaseExecutor):
                 element = self._find_element(d, locator)
                 timeout = params.get("timeout", 10)
                 if not element.wait(timeout=timeout):
-                    raise AssertionError("Element does not exist")
+                    locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                    raise AssertionError(f"Element not found: {locator_info}")
                 self._log("Assertion passed: element exists", "INFO")
 
             elif keyword_name == "assert_element_not_exists":
                 element = self._find_element(d, locator)
                 timeout = params.get("timeout", 10)
                 if element.wait(timeout=timeout):
-                    raise AssertionError("Element should not exist but it does")
+                    locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                    raise AssertionError(f"Element should not exist but found: {locator_info}")
                 self._log("Assertion passed: element does not exist", "INFO")
 
             elif keyword_name == "assert_element_visible":
                 element = self._find_element(d, locator)
                 timeout = params.get("timeout", 10)
                 if not element.wait(timeout=timeout):
-                    raise AssertionError("Element is not visible")
+                    locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                    raise AssertionError(f"Element not visible: {locator_info}")
                 if not element.info.get("visible", True):
                     raise AssertionError("Element is not visible")
                 self._log("Assertion passed: element is visible", "INFO")
@@ -146,14 +149,16 @@ class AndroidExecutor(BaseExecutor):
                 timeout = params.get("timeout", 10)
                 if element.wait(timeout=timeout):
                     if element.info.get("visible", True):
-                        raise AssertionError("Element should not be visible but it is")
+                        locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                        raise AssertionError(f"Element should not be visible but is: {locator_info}")
                 self._log("Assertion passed: element is not visible", "INFO")
 
             elif keyword_name == "assert_element_enabled":
                 element = self._find_element(d, locator)
                 timeout = params.get("timeout", 10)
                 if not element.wait(timeout=timeout):
-                    raise AssertionError("Element is not enabled")
+                    locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                    raise AssertionError(f"Element not found: {locator_info}")
                 if not element.info.get("enabled", True):
                     raise AssertionError("Element is not enabled")
                 self._log("Assertion passed: element is enabled", "INFO")
@@ -163,14 +168,16 @@ class AndroidExecutor(BaseExecutor):
                 timeout = params.get("timeout", 10)
                 if element.wait(timeout=timeout):
                     if element.info.get("enabled", True):
-                        raise AssertionError("Element should be disabled but it is enabled")
+                        locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                        raise AssertionError(f"Element should be disabled but is enabled: {locator_info}")
                 self._log("Assertion passed: element is disabled", "INFO")
 
             elif keyword_name == "assert_text_equals":
                 element = self._find_element(d, locator)
                 timeout = params.get("timeout", 10)
                 if not element.wait(timeout=timeout):
-                    raise AssertionError("Element not found for text assertion")
+                    locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                    raise AssertionError(f"Element not found: {locator_info}")
                 actual = element.get_text()
                 expected = params.get("expected", "")
                 assert actual == expected, f"Text mismatch: expected '{expected}', got '{actual}'"
@@ -180,7 +187,8 @@ class AndroidExecutor(BaseExecutor):
                 element = self._find_element(d, locator)
                 timeout = params.get("timeout", 10)
                 if not element.wait(timeout=timeout):
-                    raise AssertionError("Element not found for text assertion")
+                    locator_info = f"[{locator.get('type')}={locator.get('value')}]" if locator else "N/A"
+                    raise AssertionError(f"Element not found: {locator_info}")
                 actual = element.get_text()
                 expected = params.get("expected", "")
                 assert expected in actual, f"Text '{expected}' not found in '{actual}'"
